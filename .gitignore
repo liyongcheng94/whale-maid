@@ -1,4 +1,5 @@
 src/
+.zcode/
 .venv/
 __pycache__/
 *.pyc
