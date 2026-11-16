@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小鲸灵 · 冉冉姐姐的小鲸鱼</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:linear-gradient(180deg,#072a4a 0%,#0e5a8f 45%,#1490c8 100%);
+    overflow:hidden; user-select:none; touch-action:manipulation;
+    display:flex; flex-direction:column;
+  }
+  /* ---- 背景气泡 ---- */
+  .bubble { position:absolute; bottom:-70px; border-radius:50%;
+    background:rgba(255,255,255,.13); animation:rise linear infinite; pointer-events:none; }
+  @keyframes rise { to { transform:translateY(-120vh); opacity:0; } }
+
+  /* ---- 顶栏 ---- */
+  #topbar { position:relative; z-index:5; display:flex; align-items:center;
+    justify-content:space-between; padding:10px 14px; }
+  #banner { display:none; background:linear-gradient(90deg,#ff9eb5,#ffd39e);
+    color:#7a2d43; font-weight:bold; padding:8px 18px; border-radius:999px;
+    box-shadow:0 4px 14px rgba(0,0,0,.25); animation:pop .5s ease; }
+  #chip { background:rgba(255,255,255,.16); color:#eaf6ff; font-size:13px;
+    padding:6px 12px; border-radius:999px; backdrop-filter:blur(4px); }
+  @keyframes pop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+  /* ---- 舞台 ---- */
+  #stage { flex:1; position:relative; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:6px; }
+  #speech { max-width:min(86vw,430px); background:#fff; color:#1c3a52;
+    font-size:17px; line-height:1.55; padding:12px 18px; border-radius:18px;
+    box-shadow:0 6px 18px rgba(0,0,0,.28); opacity:0; transform:translateY(12px) scale(.94);
+    transition:.25s ease; position:relative; text-align:center; min-height:0; }
+  #speech.show { opacity:1; transform:translateY(0) scale(1); }
+  #speech::after { content:""; position:absolute; left:50%; bottom:-10px;
+    transform:translateX(-50%); border:10px solid transparent; border-top-color:#fff; border-bottom:0; }
+  #whaleSvg { width:min(74vw,370px); height:auto; display:block; }
+  #hint { color:#bfe4ff; font-size:13px; opacity:.85; }
+
+  /* ---- 鲸鱼动画 ---- */
+  #whaleG { animation:float 3.2s ease-in-out infinite; transform-origin:160px 150px; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  #tail { animation:sway 3.2s ease-in-out infinite; transform-origin:262px 160px; }
+  @keyframes sway { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(9deg)} }
+  #eyes { animation:blink 4.6s infinite; transform-origin:157px 142px; transform-box:view-box; }
+  @keyframes blink { 0%,91%,100%{transform:scaleY(1)} 94%{transform:scaleY(.08)} 97%{transform:scaleY(1)} }
+  #whaleG.wiggle { animation:wiggle .7s ease-in-out; }
+  @keyframes wiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg) translateY(-10px)} 60%{transform:rotate(4deg)} }
+  #whaleG.squash { animation:squash .6s ease-in-out; }
+  @keyframes squash { 0%,100%{transform:scale(1,1)} 40%{transform:scale(1.07,.9)} }
+  .hot { cursor:pointer; }
+
+  /* ---- 底部操作坞 ---- */
+  #dock { position:relative; z-index:5; display:flex; flex-direction:column;
+    align-items:center; gap:10px; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); }
+  #chips { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  .chipbtn { background:rgba(255,255,255,.18); color:#fff; border:none; font-size:14px;
+    padding:8px 14px; border-radius:999px; cursor:pointer; backdrop-filter:blur(4px); }
+  .chipbtn:active { transform:scale(.94); }
+  #microw { display:flex; align-items:center; gap:12px; width:min(92vw,460px); }
+  #mic { width:62px; height:62px; border-radius:50%; border:none; font-size:26px;
+    background:#ffd39e; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3);
+    flex:none; transition:.15s; }
+  #mic.rec { background:#ff7fa0; animation:pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+  #inputrow { flex:1; display:flex; gap:8px; }
+  #textbox { flex:1; border:none; border-radius:999px; padding:12px 18px; font-size:15px;
+    outline:none; background:rgba(255,255,255,.92); }
+  #send { border:none; border-radius:999px; padding:0 20px; font-size:15px; font-weight:bold;
+    background:#0e5a8f; color:#fff; cursor:pointer; }
+  #send:active { transform:scale(.94); }
+</style>
+</head>
+<body>
+  <div id="topbar">
+    <div style="width:1px"></div>
+    <div id="banner">🎂 冉冉姐姐,生日快乐!</div>
+    <div id="chip">💬 台词模式</div>
+  </div>
+
+  <div id="stage">
+    <div id="speech"></div>
+    <svg id="whaleSvg" viewBox="0 0 340 270" aria-label="小鲸灵">
+      <g id="whaleG">
+        <g id="tail">
+          <path d="M258 150 C292 128 318 132 330 118 C322 142 324 152 330 168 C314 158 292 162 262 172 Z" fill="#6cb6ea"/>
+        </g>
+        <ellipse cx="160" cy="155" rx="108" ry="76" fill="#7ec8f7"/>
+        <ellipse cx="158" cy="198" rx="78" ry="42" fill="#cfeaff"/>
+        <path d="M92 202 C114 228 154 230 178 216 C158 242 118 240 88 218 Z" fill="#6cb6ea"/>
+        <path d="M92 100 Q160 48 228 100 L228 84 Q160 34 92 84 Z" fill="#ffffff"/>
+        <circle cx="98" cy="88" r="9" fill="#ffffff"/>
+        <circle cx="126" cy="72" r="9" fill="#ffffff"/>
+        <circle cx="160" cy="66" r="9" fill="#ffffff"/>
+        <circle cx="194" cy="72" r="9" fill="#ffffff"/>
+        <circle cx="222" cy="88" r="9" fill="#ffffff"/>
+        <path d="M70 84 L96 72 L96 92 Z" fill="#ff9eb5"/>
+        <path d="M96 92 L122 84 L104 62 Z" fill="#ffb7c9"/>
+        <circle cx="98" cy="82" r="6" fill="#ff7fa0"/>
+        <g id="eyes">
+          <circle cx="128" cy="142" r="14" fill="#26333f"/>
+          <circle cx="186" cy="142" r="14" fill="#26333f"/>
+          <circle cx="133" cy="137" r="5" fill="#ffffff"/>
+          <circle cx="191" cy="137" r="5" fill="#ffffff"/>
+        </g>
+        <ellipse cx="106" cy="168" rx="12" ry="7" fill="#ff9eb5" opacity=".75"/>
+        <ellipse cx="210" cy="168" rx="12" ry="7" fill="#ff9eb5" opacity=".75"/>
+        <path d="M148 176 Q160 188 172 176" stroke="#26333f" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      </g>
+      <circle class="hot" data-pool="touch_head" data-anim="wiggle" cx="160" cy="76" r="58" fill="transparent"/>
+      <circle class="hot" data-pool="touch_belly" data-anim="squash" cx="160" cy="192" r="54" fill="transparent"/>
+    </svg>
+    <div id="hint">摸摸我的头和肚肚试试 · 按住 🎤 说话</div>
+  </div>
+
+  <div id="dock">
+    <div id="chips">
+      <button class="chipbtn" data-say="生日快乐！">🎂 生日快乐！</button>
+      <button class="chipbtn" data-say="唱首歌吧！">🎵 唱首歌！</button>
+      <button class="chipbtn" data-say="给我讲个故事！">📖 讲故事！</button>
+      <button class="chipbtn" data-say="你想吃白饭吗？">🍚 白饭！</button>
+    </div>
+    <div id="microw">
+      <button id="mic" title="按住说话">🎤</button>
+      <div id="inputrow">
+        <input id="textbox" placeholder="在这里对小鲸灵说话…" autocomplete="off">
+        <button id="send">发送</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+"use strict";
+const THINKING = "让我想想……唔,让我再想亿会儿。";
+const EGGS_URL = "/api/eggs";
+let EGGS = { triggers: { touch_head: ["咕噜噜?"], touch_belly: ["咕噜噜!"], greeting: ["冉冉姐姐好!"], fallback: ["咕噜噜……"] }, keyword_map: {} };
+let curAudio = null, hideTimer = null, rec = null, listening = false;
+
+const $ = id => document.getElementById(id);
+const speech = $("speech"), whaleG = $("whaleG"), chip = $("chip");
+
+/* ---- 背景气泡 ---- */
+for (let i = 0; i < 12; i++) {
+  const b = document.createElement("div");
+  const s = 8 + Math.random() * 26;
+  b.className = "bubble";
+  b.style.cssText = `left:${Math.random() * 100}%;width:${s}px;height:${s}px;` +
+    `animation-duration:${7 + Math.random() * 9}s;animation-delay:${-Math.random() * 12}s;`;
+  document.body.appendChild(b);
+}
+
+/* ---- 气泡说话 ---- */
+function bubble(text, ms = 6000) {
+  speech.textContent = text;
+  speech.classList.add("show");
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => speech.classList.remove("show"), ms);
+}
+
+/* ---- TTS:edge-tts 优先,失败回落浏览器合成 ---- */
+async function speak(text) {
+  try {
+    const r = await fetch("/api/tts?text=" + encodeURIComponent(text));
+    if (!r.ok) throw new Error(r.status);
+    const blob = await r.blob();
+    if (curAudio) { curAudio.pause(); curAudio = null; }
+    curAudio = new Audio(URL.createObjectURL(blob));
+    await curAudio.play();
+  } catch (e) {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "zh-CN"; u.rate = 1.05;
+      speechSynthesis.speak(u);
+    } catch (_) { /* 静默:文字气泡仍在 */ }
+  }
+}
+
+function say(text, anim) {
+  bubble(text);
+  speak(text);
+  if (anim) {
+    whaleG.classList.remove(anim);
+    void whaleG.getBoundingClientRect(); // 强制重排以重启动画
+    whaleG.classList.add(anim);
+    setTimeout(() => whaleG.classList.remove(anim), 800);
+  }
+}
+
+const pick = pool => {
+  const arr = EGGS.triggers[pool] || EGGS.triggers.fallback;
+  return arr[Math.floor(Math.random() * arr.length)];
+};
+
+/* ---- 对话:DeepSeek(后端)→ 离线兜底 ---- */
+async function chat(text) {
+  bubble(THINKING, 8000);
+  whaleG.classList.add("wiggle");
+  setTimeout(() => whaleG.classList.remove("wiggle"), 800);
+  try {
+    const r = await fetch("/api/chat", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+    const data = await r.json();
+    chip.textContent = data.source === "deepseek" ? "🧠 聪明模式" : "⚠️ 台词兜底";
+    say(data.reply);
+  } catch (e) {
+    chip.textContent = "⚠️ 台词兜底";
+    say(pick("fallback"));
+  }
+}
+
+/* ---- 触摸热区 ---- */
+document.querySelectorAll(".hot").forEach(h => {
+  h.addEventListener("pointerdown", () => say(pick(h.dataset.pool), h.dataset.anim));
+});
+
+/* ---- 快捷 chips ---- */
+document.querySelectorAll(".chipbtn").forEach(b => {
+  b.addEventListener("click", () => chat(b.dataset.say));
+});
+
+/* ---- 文字输入 ---- */
+$("send").addEventListener("click", () => {
+  const t = $("textbox").value.trim();
+  if (t) { chat(t); $("textbox").value = ""; }
+});
+$("textbox").addEventListener("keydown", e => { if (e.key === "Enter") $("send").click(); });
+
+/* ---- 语音:按住说话(浏览器识别) ---- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  rec = new SR();
+  rec.lang = "zh-CN"; rec.interimResults = false; rec.maxAlternatives = 1;
+  rec.onresult = e => chat(e.results[0][0].transcript);
+  rec.onend = () => setListen(false);
+  rec.onerror = () => { setListen(false); bubble("呜……我听不清,冉冉姐姐用字字告诉我好不好?"); };
+} 
+const micBtn = $("mic");
+function setListen(on) {
+  listening = on;
+  micBtn.classList.toggle("rec", on);
+  if (on) bubble("我在听……", 15000);
+}
+micBtn.addEventListener("pointerdown", () => {
+  if (!rec) { bubble("这台浏览器不能听声音,用下面的字字告诉我吧!"); return; }
+  try { rec.start(); } catch (_) {}
+});
+["pointerup", "pointerleave", "pointercancel"].forEach(ev =>
+  micBtn.addEventListener(ev, () => { if (listening && rec) try { rec.stop(); } catch (_) {} }));
+
+/* ---- 状态 chip + 生日横幅 ---- */
+fetch("/api/health").then(r => r.json()).then(h => {
+  chip.textContent = h.deepseek ? "🧠 聪明模式" : "💬 台词模式";
+}).catch(() => {});
+const isBirthday = new Date().getMonth() === 10 && new Date().getDate() === 27;
+if (isBirthday || location.search.includes("force")) {
+  $("banner").style.display = "inline-block";
+}
+
+/* ---- 启动 ---- */
+fetch(EGGS_URL).then(r => r.json()).then(j => { EGGS = j; }).catch(() => {});
+setTimeout(() => {
+  say(isBirthday || location.search.includes("force") ? pick("birthday") : pick("greeting"));
+}, 900);
+</script>
+</body>
+</html>

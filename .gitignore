@@ -1,6 +1,10 @@
 src/
 .zcode/
 .venv/
+web/backend/.env
+web/backend/tts_cache/
+assets_audio/
+
 __pycache__/
 *.pyc
 *3mf
