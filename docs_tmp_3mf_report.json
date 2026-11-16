@@ -1,0 +1,54 @@
+{
+  "file": "Hi3D_Stylized+Chibi+Whale+Maid+Anime+3D+Model_allparts_20260828_003958.3mf",
+  "units": "millimeter",
+  "bbox_mm": {
+    "x": 110.02,
+    "y": 77.44,
+    "z": 128.0
+  },
+  "vertices": 2543819,
+  "triangles": 5000027,
+  "total_signed_volume_cm3": 144.8,
+  "winding": "outward",
+  "connected_components": 155,
+  "component_top5_cm3": [
+    {
+      "root": 1405245,
+      "signed_cm3": 24.8,
+      "tris": 219160
+    },
+    {
+      "root": 2306202,
+      "signed_cm3": 17.8,
+      "tris": 200948
+    },
+    {
+      "root": 2431214,
+      "signed_cm3": 17.3,
+      "tris": 106838
+    },
+    {
+      "root": 392661,
+      "signed_cm3": 17.3,
+      "tris": 166133
+    },
+    {
+      "root": 2213811,
+      "signed_cm3": 6.7,
+      "tris": 182460
+    }
+  ],
+  "debris_components_lt1cm3": 127,
+  "main_component": {
+    "tris": 219160,
+    "bbox_mm": {
+      "x": 45.88,
+      "y": 31.7,
+      "z": 53.74
+    },
+    "signed_cm3": 24.8
+  },
+  "vertex_duplicate_ratio_sampled": "649/317978 = 0.2%",
+  "color_entries": 203399,
+  "elapsed_s": 8.8
+}
