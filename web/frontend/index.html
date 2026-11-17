@@ -444,6 +444,30 @@ async function chat(text) {
     if (data.song) {
       await playIntroThenSong({ text: data.reply, idx: data.idx, pool: data.pool, emo: data.emo },
         data.song, data.song_title || "");
+    } else if (data.song_pending) {
+      // 曲库外点播(2026-11-17):先播 LLM 应答,后台 go-music-dl 实时捞歌,到手即播
+      lastPool = "fallback";
+      bubble(data.reply);
+      setEmo(data.emo);
+      await speak(data.reply, data.emo);
+      bubble("♪ 正在深海捞《" + data.song_pending + "》…", 60000);
+      try {
+        const fr = await fetch("/api/music/fetch", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: data.song_pending })
+        });
+        if (fr.ok) {
+          const fd = await fr.json();
+          bubble("♪ 正在播放《" + fd.title + "》", 8000);
+          setEmo("happy");
+          animTrigger("wiggle");
+          await playUrl("/music-audio/" + fd.song);
+        } else {
+          bubble("呜……这首歌太难捞了,换一首好不好?", 6000);
+        }
+      } catch (e) {
+        bubble("呜……捞歌失败了,换一首好不好?", 6000);
+      }
     } else if (data.source === "offline" && data.pool && data.idx) {
       await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
     } else {

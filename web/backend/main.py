@@ -13,12 +13,14 @@
   uvicorn main:app --host 0.0.0.0 --port 8100
 """
 
+import asyncio
 import hashlib
 import collections
 import json
 import os
 import random
 import re
+import shutil
 import time
 from pathlib import Path
 
@@ -193,17 +195,16 @@ PLAY_MUSIC_TOOL = {
 
 
 def _resolve_song(query: str):
-    """LLM 的 play_music 参数 → (组名, 歌)。点歌名/别名子串 > 组关键词 > 全曲库随机。"""
+    """LLM 的 play_music 参数 → (组名, 歌|None)。
+    「随机」→ 全曲库随机;点歌名/别名命中本地曲库 → 返回;否则 None(前端异步找歌下载)。"""
     q = (query or "随机").lower().strip()
-    if q not in ("随机", "random", ""):
-        for gname, s in _all_songs():
-            hay = " ".join([s["title"]] + s.get("alias", []) + [s["file"]]).lower()
-            if q in hay or any(w in q for w in hay.split()):
-                return gname, s
-        for gname, g in PLAYLIST["groups"].items():
-            if any(k.lower() in q for k in g.get("keywords", [])):
-                return gname, random.choice(g["songs"])
-    return random.choice(_all_songs())
+    if q in ("随机", "random", ""):
+        return random.choice(_all_songs())
+    for gname, s in _all_songs():
+        hay = " ".join([s["title"]] + s.get("alias", []) + [s["file"]]).lower()
+        if q in hay or any(w and w in q for w in hay.split()):
+            return gname, s
+    return None, None
 
 
 # ---- 天气工具(Open-Meteo 免费无 key;2026-11-17 用户实测发现小鲸灵答不了天气) ----
@@ -286,7 +287,7 @@ async def chat(inp: ChatIn):
     if not text:
         idx, reply = _pick_idx("fallback")
         return {"reply": _adultize(reply, mode), "emo": EGGS["emo"].get("fallback"), "pool": "fallback",
-                "idx": idx, "source": "offline", "song": None, "song_title": None}
+                "idx": idx, "source": "offline", "song": None, "song_title": None, "song_pending": None}
     # 音乐路由前置拦截(在 DeepSeek 之前):命中即播歌,不进 LLM 也不入会话记忆
     music = _music_route(text)
     if music:
@@ -298,7 +299,7 @@ async def chat(inp: ChatIn):
     messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
 
     reply, emo, pool, idx, source = None, None, None, None, "offline"
-    song_file = song_title = None
+    song_file = song_title = song_pending = None
     if DEEPSEEK_KEY:
         try:
             async with httpx.AsyncClient(timeout=30) as client:
@@ -333,8 +334,15 @@ async def chat(inp: ChatIn):
                         args = {}
                     if fname == "play_music":
                         gname, song = _resolve_song(args.get("query", "随机"))
-                        song_file, song_title = song["file"], song["title"]
-                        result_text = f"已找到歌曲《{song_title}》,即将开始播放。请用 1 句话(开头加表情标记)邀请用户欣赏,不要复述歌词。"
+                        if song is not None:
+                            song_file, song_title = song["file"], song["title"]
+                            result_text = f"已找到歌曲《{song_title}》,即将开始播放。请用 1 句话(开头加表情标记)邀请用户欣赏,不要复述歌词。"
+                        else:
+                            # 曲库没有:前端会异步找歌下载,先让模型应一句
+                            song_title = args.get("query") or "那首歌"
+                            song_pending = song_title
+                            result_text = (f"曲库里没有《{song_title}》。请用 1 句话(开头加表情标记)告诉用户你正游去深海"
+                                           f"把《{song_title}》捞上来,马上回来,不要复述歌词。")
                     elif fname == "get_weather":
                         try:
                             result_text = await _fetch_weather(args.get("city") or DEFAULT_CITY)
@@ -386,7 +394,126 @@ async def chat(inp: ChatIn):
     except Exception:
         pass
     return {"reply": reply, "emo": emo, "pool": pool, "idx": idx, "source": source,
-            "song": song_file, "song_title": song_title}
+            "song": song_file, "song_title": song_title, "song_pending": song_pending}
+
+
+# ---- 按需找歌(2026-11-17 点播任意歌):go-music-dl web 服务实时搜索下载入库 ----
+# 前提:music-dl web 服务在跑(music-dl.exe web -p 8099 --no-browser);bilibili 源实测无需 token
+MUSIC_DL_URL = os.environ.get("MUSIC_DL_URL", "http://127.0.0.1:8099/music")
+MUSIC_DL_DATA = os.environ.get("MUSIC_DL_DATA", os.path.join(
+    os.environ.get("TEMP", "/tmp"), "wm_musicdl", "data", "downloads"))
+SONG_FETCH_TIMEOUT = 120  # 秒
+
+_SONG_CARD_RE = re.compile(r'<li class="song-card"([^>]*)>')
+_DATA_ATTR_RE = re.compile(r'data-([a-z-]+)="([^"]*)"')
+
+
+def _slugify(name: str) -> str:
+    s = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+    return (s or "track")[:40]
+
+
+def _next_seq(group: str) -> int:
+    n = 0
+    if MUSIC_DIR.exists():
+        for f in MUSIC_DIR.iterdir():
+            m = re.match(rf"{group}_(\d+)_", f.name)
+            if m:
+                n = max(n, int(m.group(1)))
+    return n + 1
+
+
+def _register_playlist(group: str, fname: str, title: str, source: str):
+    pl = json.loads((CONFIG / "playlist.json").read_text(encoding="utf-8"))
+    g = pl["groups"].setdefault(group, {"keywords": [], "songs": []})
+    entry = {"file": fname, "title": title[:40], "alias": [title[:12]], "source": source}
+    g["songs"].append(entry)
+    (CONFIG / "playlist.json").write_text(json.dumps(pl, ensure_ascii=False, indent=2), encoding="utf-8")
+    return entry
+
+
+class MusicFetchIn(BaseModel):
+    query: str
+    group: str = "songs"
+
+
+@app.post("/api/music/fetch")
+async def music_fetch_api(inp: MusicFetchIn):
+    """点播曲库外任意歌:go-music-dl(bilibili 源)搜索→下载→入库→登记歌单。
+    长轮询(最多 ~2 分钟),成功返回 {ok, song, title};失败 503 由前端 TTS 兜底。"""
+    query = inp.query.strip()[:60]
+    if not query:
+        raise HTTPException(400, "empty query")
+    # 1) 搜索(bilibili 源,25s~420s 过滤试听片段与超长合集)
+    html = (await client_get(f"{MUSIC_DL_URL}/search",
+                             params={"q": query, "sources": "bilibili", "page": "1"})).text
+    cards = []
+    for attrs_html in _SONG_CARD_RE.findall(html):
+        a = dict(_DATA_ATTR_RE.findall(attrs_html))
+        try:
+            dur = int(a.get("duration") or 0)
+        except ValueError:
+            dur = 0
+        if 25 <= dur <= 420:
+            cards.append(a)
+    if not cards:
+        raise HTTPException(503, f"没找到《{query}》的可用音频")
+    song = cards[0]
+    # 2) 入下载队列
+    body = {"request_id": f"wm-{int(time.time()*1000)}",
+            "songs": [{"id": song.get("id", ""), "source": song.get("source", "bilibili"),
+                       "name": song.get("name", ""), "artist": song.get("artist", ""),
+                       "album": song.get("album", ""), "cover": song.get("cover", ""),
+                       "extra": song.get("extra", ""), "embed": False}]}
+    import httpx as _hx
+    async with _hx.AsyncClient(timeout=30) as c:
+        r = await c.post(f"{MUSIC_DL_URL}/api/downloads/queue", json=body,
+                         headers={"X-Requested-With": "XMLHttpRequest"})
+        r.raise_for_status()
+        # 3) 轮询下载记录(文件落盘由 music-dl 完成)
+        deadline = time.time() + SONG_FETCH_TIMEOUT
+        rel = None
+        while time.time() < deadline:
+            await asyncio.sleep(4)
+            rec = (await c.get(f"{MUSIC_DL_URL}/api/downloads/records?page=1",
+                               headers={"X-Requested-With": "XMLHttpRequest"})).json()
+            for item in rec.get("records", []):
+                if song["name"][:12] in (item.get("Name") or ""):
+                    if item.get("Status") == "success":
+                        rel = item.get("RelPath")
+                        break
+                    if item.get("Status") == "failed":
+                        raise HTTPException(503, f"下载失败: {(item.get('Error') or '')[:80]}")
+            if rel:
+                break
+        if not rel:
+            raise HTTPException(503, "下载超时")
+    # 4) 入库(ASCII 重命名)+登记歌单;PLAYLIST 缓存同步刷新
+    src = MUSIC_DL_DATA if os.path.isabs(MUSIC_DL_DATA) and os.path.isdir(MUSIC_DL_DATA) else None
+    if not src:
+        raise HTTPException(503, f"下载产物目录不可达: {MUSIC_DL_DATA}")
+    found = None
+    for f in os.listdir(src):
+        if song["name"][:12] in f:
+            found = os.path.join(src, f)
+            break
+    if not found:
+        raise HTTPException(503, "下载完成但未找到产物文件")
+    group = inp.group if inp.group in PLAYLIST["groups"] else "songs"
+    fname = "%s_%02d_%s.m4a" % (group, _next_seq(group), _slugify(song["name"]))
+    MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(found, MUSIC_DIR / fname)
+    entry = _register_playlist(group, fname, song["name"], song.get("source", "bilibili"))
+    PLAYLIST.clear()
+    PLAYLIST.update(json.loads((CONFIG / "playlist.json").read_text(encoding="utf-8")))
+    print(f"[music] 点播入库: {query} -> {fname}")
+    return {"ok": True, "song": fname, "title": entry["title"]}
+
+
+async def client_get(url: str, params: dict):
+    import httpx as _hx
+    async with _hx.AsyncClient(timeout=30) as c:
+        return await c.get(url, params=params)
 
 
 @app.get("/api/tts")
