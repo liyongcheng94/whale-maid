@@ -259,11 +259,13 @@ async function submitAnswer() {
     await speak("答对了", "happy");
   } else {
     $("feedback").className = "no";
-    $("feedback").textContent = r.retry ? "没对,但差得不远——看提示,换个角度再试一次。" : "这两步先放过,换个题继续走。";
-    $("scaffold").textContent = "💡 " + (r.scaffold || "");
+    if (r.step_hint) $("feedback").textContent = "还没对。这次按「中间步骤」的写法,一步一步来。";
+    else $("feedback").textContent = r.retry ? "没对,但差得不远——看提示,换个角度再试一次。" : "这两步先放过,换个题继续走。";
+    $("scaffold").textContent = "💡 " + (r.step_hint || r.scaffold || "");
     $("scaffold").style.display = "block";
-    bubble("提示在下方。先按提示的路径走一步。");
-    await speak("看一下提示,换个角度再试。");
+    if (r.prereq) bubble(`先修点:${r.prereq.name}(${r.prereq.chapter})——先做它的诊断题再回来。`);
+    else bubble("提示在下方。先按提示的路径走一步。");
+    await speak(r.prereq ? `先复习一下${r.prereq.name}` : "看一下提示,换个角度再试。");
   }
   updateProgress(r.count, r.total);
   if (r.done) { showSummary(r); return; }

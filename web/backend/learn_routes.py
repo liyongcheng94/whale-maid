@@ -47,6 +47,21 @@ def _topic_name(topic_id):
     return t["name"] if t else topic_id
 
 
+def _prereq_hint(topic: str):
+    """R7 先修链归因:优先 hard 边,返回最近的可复习先修点(含诊断问题,不给答案)。"""
+    edges = [e for e in KG["edges"] if e["topicId"] == topic and e["strength"] == "hard"] \
+        or [e for e in KG["edges"] if e["topicId"] == topic]
+    if not edges:
+        return None
+    pid = edges[0]["prerequisiteId"]
+    node = next((t for t in KG["topics"] if t["id"] == pid), None)
+    if not node:
+        return None
+    dq = node.get("diagnostic_question", {})
+    return {"id": pid, "name": node["name"], "chapter": node.get("chapter", ""),
+            "question": dq.get("question", "")}
+
+
 def _verify_answer(q, user_answer) -> bool:
     """数值判答:浮点容差;题目带 verify 表达式时双重核验(表达式只允许数字与四则符号)。"""
     try:
@@ -247,13 +262,19 @@ async def learn_answer(inp: AnswerIn):
         learn.setdefault("adjust_log", []).append(
             {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "child": inp.child,
              "topic": q["topic"], "from": old, "to": topic_state["tier"], "reason": "连续答错 2 题,插入脚手架"})
-    if attempts[inp.qid] >= 2:
-        # 两次都错:过题,换下一题(不公布答案,给"换一条路"动作)
+    if attempts[inp.qid] >= 3:
+        # R6:三次都错 → 过题换下一题;R7:沿先修链归因,推荐先修点
         sess["count"] += 1
         sess["streak"] = 0
         sess["results"].append({"qid": q["id"], "correct": False})
         out["count"] = sess["count"]
         out["retry"] = False
+        prereq = _prereq_hint(q["topic"])
+        if prereq:
+            out["prereq"] = prereq
+            learn.setdefault("adjust_log", []).append(
+                {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "child": inp.child,
+                 "topic": q["topic"], "reason": f"建议先复习先修点:{prereq['name']}", "prereq": prereq["id"]})
         if sess["count"] >= limit:
             out["done"] = True
             if sess.get("daily"):
@@ -266,8 +287,14 @@ async def learn_answer(inp: AnswerIn):
                 out["next"] = _question_payload(nq, topic_state["tier"])
         store.save_learn(inp.child, learn)
         return out
+    if attempts[inp.qid] == 2:
+        # R6 第二次错:更具体的中间步提示(仍不给答案),同题再试一次
+        out["retry"] = True
+        out["step_hint"] = q.get("step_hint") or "把题目里的数字圈出来,一步一步写在草稿纸上,再回头对照上面的提示。"
+        store.save_learn(inp.child, learn)
+        return out
 
-    out["retry"] = True  # 同题再试一次,带着脚手架
+    out["retry"] = True  # 第一次错:同题再试一次,带着脚手架
     store.save_learn(inp.child, learn)
     return out
 
