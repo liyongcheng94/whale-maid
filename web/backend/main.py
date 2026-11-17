@@ -48,7 +48,9 @@ SYSTEM_PROMPTS = {
 }
 
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
-DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+# v4 系列默认开思考模式:语音摆件要低延迟短句,显式关闭(deepseek-chat 将于 2026-07-24 弃用,默认升级 v4-flash)
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash")
+DEEPSEEK_THINKING = {"type": "disabled"}
 TTS_VOICE = os.environ.get("WHALE_TTS_VOICE", "zh-CN-XiaoyiNeural")
 
 # 表情标记协议(借鉴 Open-LLM-VTuber 的 expression mapping,SVG 轻量版):
@@ -243,6 +245,7 @@ async def chat(inp: ChatIn):
                         "model": DEEPSEEK_MODEL,
                         "messages": messages,
                         "tools": [PLAY_MUSIC_TOOL],
+                        "thinking": DEEPSEEK_THINKING,
                         "max_tokens": 100,
                         "temperature": 0.8,
                     },
@@ -268,6 +271,7 @@ async def chat(inp: ChatIn):
                             DEEPSEEK_URL,
                             headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
                             json={"model": DEEPSEEK_MODEL, "messages": follow,
+                                  "thinking": DEEPSEEK_THINKING,
                                   "tool_choice": "none", "max_tokens": 60, "temperature": 0.8},
                         )
                         r2.raise_for_status()
