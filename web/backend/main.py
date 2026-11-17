@@ -22,6 +22,7 @@ import random
 import re
 import shutil
 import time
+import urllib.parse
 from pathlib import Path
 
 import httpx
@@ -407,6 +408,8 @@ MUSIC_DL_DATA = os.environ.get("MUSIC_DL_DATA", os.path.join(
 MUSIC_FETCH_SOURCES = os.environ.get("MUSIC_FETCH_SOURCES", "bilibili")
 LYRICS_DIR = MUSIC_DIR / "lyrics"
 LYRICS_DIR.mkdir(parents=True, exist_ok=True)
+COVERS_DIR = MUSIC_DIR / "covers"
+COVERS_DIR.mkdir(parents=True, exist_ok=True)
 SONG_FETCH_TIMEOUT = 120  # 秒
 
 _SONG_CARD_RE = re.compile(r'<li class="song-card"([^>]*)>')
@@ -463,7 +466,8 @@ async def music_fetch_api(inp: MusicFetchIn):
             cards.append(a)
     if not cards:
         raise HTTPException(503, f"没找到《{query}》的可用音频")
-    song = cards[0]
+    with_cover = [c for c in cards if c.get("cover")]
+    song = with_cover[0] if with_cover else cards[0]  # MV 类卡片常无封面,优先选带封面的
     # 2) 入下载队列
     body = {"request_id": f"wm-{int(time.time()*1000)}",
             "songs": [{"id": song.get("id", ""), "source": song.get("source", "bilibili"),
@@ -528,11 +532,23 @@ async def music_fetch_api(inp: MusicFetchIn):
             lyric_saved = True
     except Exception as e:
         print(f"[music] 歌词获取失败(不阻塞): {e!r}")
-    print(f"[music] 点播入库: {query} -> {fname} (歌词: {lyric_saved})")
-    return {"ok": True, "song": fname, "title": entry["title"], "lyric": lyric_saved}
+    # 6) 封面:经 music-dl cover_proxy 代理拉图存本地(bilibili 封面 URL 直连有防盗链)
+    cover_saved = None
+    if song.get("cover"):
+        try:
+            img_resp = (await client_get(f"{MUSIC_DL_URL}/cover_proxy",
+                                         params={"url": song["cover"], "source": song.get("source", "")}))
+            if img_resp.status_code == 200 and len(img_resp.content) > 1000:  # proxy 是 chunked,无 content-length 头
+                cov_name = os.path.splitext(fname)[0] + ".jpg"
+                (COVERS_DIR / cov_name).write_bytes(img_resp.content)
+                cover_saved = cov_name
+        except Exception as e:
+            print(f"[music] 封面获取失败(不阻塞): {e!r}")
+    print(f"[music] 点播入库: {query} -> {fname} (歌词: {lyric_saved}, 封面: {bool(cover_saved)})")
+    return {"ok": True, "song": fname, "title": entry["title"], "lyric": lyric_saved, "cover": cover_saved}
 
 
-async def client_get(url: str, params: dict):
+async def client_get(url: str, params: dict | None = None):
     import httpx as _hx
     async with _hx.AsyncClient(timeout=30) as c:
         return await c.get(url, params=params)
@@ -566,6 +582,7 @@ if MUSIC_DIR.exists():
     app.mount("/music-audio", StaticFiles(directory=str(MUSIC_DIR)), name="music-audio")
 
 app.mount("/music-lyrics", StaticFiles(directory=str(LYRICS_DIR)), name="music-lyrics")
+app.mount("/music-covers", StaticFiles(directory=str(COVERS_DIR)), name="music-covers")
 
 
 @app.get("/api/history")

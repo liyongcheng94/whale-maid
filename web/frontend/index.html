@@ -57,12 +57,25 @@
   #speech::after { content:""; position:absolute; left:50%; bottom:-10px;
     transform:translateX(-50%); border:10px solid transparent; border-top-color:#fff; border-bottom:0; }
   #whaleWrap { width:min(76vw,380px); position:relative; }
-  /* 滚动歌词面板(点播播放时显示;2026-11-17 歌词链路) */
-  #lrcPanel { position:absolute; inset:0; display:none; flex-direction:column; justify-content:center;
-              pointer-events:none; overflow:hidden; text-align:center; }
-  #lrcPanel .lrc-line { font-size:14px; color:rgba(255,255,255,.45); padding:3px 0;
-                        transition:color .3s, transform .3s, font-size .3s; line-height:1.5; }
-  #lrcPanel .lrc-line.on { color:#fff; font-size:17px; font-weight:600; transform:scale(1.05); }
+  /* 播放卡片(封面+歌名+滚动歌词;2026-11-17 元数据显示) */
+  #playerPanel { position:absolute; inset:0; display:none; pointer-events:none; }
+  #playerCard { position:absolute; left:-6px; right:-6px; bottom:-14px; border-radius:18px;
+                background:rgba(12,20,40,.78); backdrop-filter:blur(10px);
+                box-shadow:0 8px 30px rgba(0,0,0,.35); padding:12px; display:flex; gap:12px;
+                align-items:center; pointer-events:auto; }
+  #playerCover { width:64px; height:64px; border-radius:12px; object-fit:cover; flex:none;
+                 box-shadow:0 4px 14px rgba(0,0,0,.4); animation:pulse 3.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.04); } }
+  #playerMeta { flex:1; min-width:0; }
+  #playerTitle { font-size:14px; font-weight:700; color:#fff; white-space:nowrap;
+                 overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+  #lrcViewport { height:96px; overflow:hidden; position:relative;
+                 mask-image:linear-gradient(transparent,#000 22%,#000 78%,transparent); }
+  #lrcPanel { display:flex; flex-direction:column; align-items:center; text-align:center;
+              transition:transform .45s ease; }
+  #lrcPanel .lrc-line { font-size:12.5px; color:rgba(255,255,255,.4); padding:2.5px 0;
+                        transition:color .3s, font-size .3s; line-height:1.4; white-space:nowrap; }
+  #lrcPanel .lrc-line.on { color:#ffd76e; font-size:15px; font-weight:600; }
   #whaleImg { width:100%; height:auto; display:block; filter:drop-shadow(0 8px 16px rgba(8,26,70,.35)); }
   #hint { color:#bfe4ff; font-size:14px; opacity:.85; }
 
@@ -170,7 +183,13 @@
       </div>
       <div class="hot head" data-pool="touch_head" data-anim="wiggle"></div>
       <div class="hot belly" data-pool="touch_belly" data-anim="squash"></div>
-      <div id="lrcPanel"></div>
+      <div id="playerPanel"><div id="playerCard">
+        <img id="playerCover" src="assets/whale_chan.png" alt="封面">
+        <div id="playerMeta">
+          <div id="playerTitle"></div>
+          <div id="lrcViewport"><div id="lrcPanel"></div></div>
+        </div>
+      </div></div>
     </div>
     <div id="hint">摸摸我的头和肚肚试试 · 按住 🎤 说话</div>
   </div>
@@ -180,9 +199,7 @@
       <button class="chipbtn util" data-repeat>🔁 再讲一个</button>
       <button class="chipbtn" data-say="生日快乐！">🎂 生日快乐！</button>
       <button class="chipbtn" data-say="唱首歌吧！">🎵 听首歌！</button>
-      <button class="chipbtn" data-say="来点哈基米吧！">🎶 哈基米！</button>
       <button class="chipbtn" data-say="给我讲个故事！">📖 讲故事！</button>
-      <button class="chipbtn" data-say="你想吃白饭吗？">🍚 白饭！</button>
     </div>
     <div id="microw">
       <button id="hush" title="安静一下">🤫</button>
@@ -411,32 +428,36 @@ function poke() {
   }, IDLE_MS);
 }
 
-/* ---- 滚动歌词(LRC;netease 源点播带词,bilibili 源无词不显示) ---- */
+/* ---- 播放卡片(封面+歌词;netease 源点播带词,本地旧歌默认鲸鱼封面) ---- */
 let lrcTimer = null, lrcLines = [];
-function hideLrc() { lrcPanel.style.display = "none"; lrcPanel.innerHTML = ""; lrcLines = [];
-                     if (lrcTimer && curAudio) curAudio.ontimeupdate = null; clearInterval(lrcTimer); lrcTimer = null; }
-function showLrcFor(songFile) {
+function hideLrc() { playerPanel.style.display = "none"; lrcPanel.innerHTML = ""; lrcLines = [];
+                     clearInterval(lrcTimer); lrcTimer = null; }
+function showPlayerFor(songFile, title, cover) {
   hideLrc();
+  playerCover.src = cover ? "/music-covers/" + cover : "assets/whale_chan.png";
+  playerTitle.textContent = "♪ " + title;
+  lrcViewport.scrollTop = 0;
   fetch("/music-lyrics/" + songFile.replace(/\.m4a$/, ".lrc")).then(r => r.ok ? r.text() : Promise.reject())
     .then(text => {
       lrcLines = [...text.matchAll(/\[(\d+):(\d+)(?:[.:](\d+))?\]\s*([^\n]+)/g)]
         .map(m => ({ t: (+m[1]) * 60 + (+m[2]) + (m[3] ? +(("0." + m[3])) : 0), line: m[4].trim() }))
         .filter(x => x.line);
-      if (!lrcLines.length) return;
+      if (!lrcLines.length) { playerPanel.style.display = "block"; return; }  // 无词也显示封面卡
       lrcPanel.innerHTML = lrcLines.map(() => '<div class="lrc-line"></div>').join("");
       const els = lrcPanel.querySelectorAll(".lrc-line");
-      lrcPanel.style.display = "flex";
+      playerPanel.style.display = "block";
       const sync = () => {
         if (!curAudio) return;
         const now = curAudio.currentTime;
-        let idx = lrcLines.findIndex((x, i) => now >= x.t && (i === lrcLines.length - 1 || now < lrcLines[i + 1].t));
+        let idx = -1;
+        for (let i = 0; i < lrcLines.length; i++) { if (now >= lrcLines[i].t) idx = i; else break; }
         els.forEach((el, i) => el.classList.toggle("on", i === idx));
         const on = els[idx];
-        if (on) on.scrollIntoView({ block: "center", behavior: "smooth" });
+        if (on) lrcViewport.scrollTop = on.offsetTop - lrcViewport.clientHeight / 2 + on.offsetHeight / 2;
       };
       lrcTimer = setInterval(sync, 300);
       sync();
-    }).catch(() => {});
+    }).catch(() => { playerPanel.style.display = "block"; });
 }
 
 /* ---- 歌单播放:引子(sing 池预生成音频)→ 接力播真实歌曲(2026-11-17 唱歌升级) ---- */
@@ -449,7 +470,7 @@ function waitAudioDone(timeoutMs) {
     })();
   });
 }
-async function playIntroThenSong(pre, file, title) {
+async function playIntroThenSong(pre, file, title, cover) {
   if (pre.idx && pre.pool) {
     await sayEgg(pre.pool, null, pre);   // 离线路由:引子用 sing 池预生成音频
     await waitAudioDone();               // 引子播完(含 TTS 回落路径)再接歌
@@ -461,7 +482,7 @@ async function playIntroThenSong(pre, file, title) {
   bubble("♪ 正在播放《" + title + "》", 8000);
   setEmo("happy");
   animTrigger("wiggle");
-  if (await playUrl("/music-audio/" + file)) { showLrcFor(file); }
+  if (await playUrl("/music-audio/" + file)) { showPlayerFor(file, title, pre.cover); }
   else await speak("♪ " + title, "happy"); // 404 回落 TTS
 }
 
@@ -478,8 +499,8 @@ async function chat(text) {
     const data = await r.json();
     chip.textContent = data.source === "deepseek" ? "🧠 聪明模式" : "⚠️ 台词兜底";
     if (data.song) {
-      await playIntroThenSong({ text: data.reply, idx: data.idx, pool: data.pool, emo: data.emo },
-        data.song, data.song_title || "");
+      await playIntroThenSong({ text: data.reply, idx: data.idx, pool: data.pool, emo: data.emo, cover: data.cover },
+        data.song, data.song_title || "", data.cover);
     } else if (data.song_pending) {
       // 曲库外点播(2026-11-17):先播 LLM 应答,后台 go-music-dl 实时捞歌,到手即播
       lastPool = "fallback";
@@ -497,7 +518,7 @@ async function chat(text) {
           bubble("♪ 正在播放《" + fd.title + "》" + (fd.lyric ? " 📜" : ""), 8000);
           setEmo("happy");
           animTrigger("wiggle");
-          if (await playUrl("/music-audio/" + fd.song)) showLrcFor(fd.song);
+          if (await playUrl("/music-audio/" + fd.song)) showPlayerFor(fd.song, fd.title, fd.cover);
         } else {
           bubble("呜……这首歌太难捞了,换一首好不好?", 6000);
         }
