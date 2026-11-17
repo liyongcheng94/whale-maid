@@ -145,7 +145,7 @@ async function showDash(tok) {
       }).join("");
       div.innerHTML = `<h2>${c.name}(${c.age} 岁)<span class="t">${c.title}</span></h2>
         <div class="row">
-          <div class="stat"><b>${c.week_minutes}</b><span>本周学习分钟</span></div>
+          <div class="stat"><b>${c.week_minutes}${c.prev_week_minutes > 0 ? (c.week_minutes >= c.prev_week_minutes ? " ▲" : " ▼") : ""}</b><span>本周学习分钟</span></div>
           <div class="stat"><b>${c.streak_days}</b><span>连续天数</span></div>
           <div class="stat"><b>${c.week_answers}</b><span>本周作答</span></div>
           <div class="stat"><b>${c.xp}</b><span>XP</span></div>
