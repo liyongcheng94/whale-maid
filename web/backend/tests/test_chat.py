@@ -204,7 +204,7 @@ class TestHealth:
     def test_健康检查(self):
         body = client.get("/api/health").json()
         assert body["deepseek"] is False  # conftest 清了 key
-        assert body["model"] == "deepseek-chat"
+        assert body["model"] == "deepseek-v4-flash"  # 2026-11-17 升级,chat 名 2026-07 弃用
 
 
 class TestEggsEndpoint:

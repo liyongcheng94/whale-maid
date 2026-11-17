@@ -5,5 +5,7 @@
 """
 import os
 
-os.environ.pop("DEEPSEEK_API_KEY", None)
-os.environ["DEEPSEEK_MODEL"] = "deepseek-chat"
+# 赋空串而非 pop:_load_dotenv 用 setdefault 读 .env,不覆盖已有键——
+# 这样即使本机 .env 有 key(或占位),测试也强制 offline 保持确定性
+os.environ["DEEPSEEK_API_KEY"] = ""
+os.environ["DEEPSEEK_MODEL"] = "deepseek-v4-flash"
