@@ -118,6 +118,16 @@ def _pick_idx(trigger: str):
     return i + 1, pool[i]
 
 
+# R19 学园语气包:孩子端(mode=child)离线兜底用 10 岁口吻,与 legacy 台词池完全独立
+EGGS_XUEYUAN = json.loads((CONFIG / "eggs_xueyuan.json").read_text(encoding="utf-8"))
+
+
+def _pick_idx_xueyuan(trigger: str):
+    pool = EGGS_XUEYUAN["triggers"].get(trigger) or EGGS_XUEYUAN["triggers"]["xfallback"]
+    i = random.randrange(len(pool))
+    return i + 1, pool[i]
+
+
 def _pick(trigger: str) -> str:
     return _pick_idx(trigger)[1]
 
@@ -508,8 +518,12 @@ async def chat(inp: ChatIn):
         except Exception as e:  # 网络/配额/超时——兜底,不冷场
             print(f"[chat] deepseek 失败,回落离线台词: {e!r}")
     if reply is None:
-        reply, pool, idx, emo = _offline_reply(text)
-        reply = _adultize(reply, mode)
+        if mode == "child":
+            idx, reply = _pick_idx_xueyuan("xfallback")
+            pool, emo = "xfallback", EGGS_XUEYUAN["emo"].get("xfallback")
+        else:
+            reply, pool, idx, emo = _offline_reply(text)
+            reply = _adultize(reply, mode)
 
     # 会话记忆(离线回复也入记忆,LLM 恢复后能接上刚才的话题)
     history.append({"role": "user", "content": text})

@@ -70,6 +70,12 @@ async def main() -> int:
             jobs.append((f"poem_{poem['id']}_0", intro, None))
             for i, line in enumerate(poem["lines"], 1):
                 jobs.append((f"poem_{poem['id']}_{i}", line, None))
+    # R19 学园语气包:eggs_xueyuan.json(独立于 legacy 台词池)
+    xy_path = ROOT / "config" / "eggs_xueyuan.json"
+    if xy_path.exists():
+        for pool, lines in json.loads(xy_path.read_text(encoding="utf-8"))["triggers"].items():
+            for i, text in enumerate(lines, 1):
+                jobs.append((f"{pool}_{i}", text, None))
     # R5 猜谜语:谜面预生成 riddle_{id}_q.mp3
     riddles_path = ROOT / "config" / "riddles.json"
     if riddles_path.exists():

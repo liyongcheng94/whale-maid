@@ -1,0 +1,14 @@
+{
+  "version": "1.0-xueyuan",
+  "comment": "学园语气台词包(R19):10 岁、平等、有信息量,禁低幼词。仅学园孩子端(mode=child)离线兜底使用;与 legacy 的 eggs_birthday.json 完全独立。",
+  "triggers": {
+    "xfallback": [
+      "这个问题有点意思,给我十秒钟想一想。",
+      "呃,这个我要查一下资料——你先说说你的想法?",
+      "嗯……换个说法问我试试?"
+    ]
+  },
+  "emo": {
+    "xfallback": "normal"
+  }
+}

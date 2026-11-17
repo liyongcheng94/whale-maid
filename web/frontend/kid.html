@@ -193,13 +193,14 @@ async function loadMap() {
   m.units.forEach(u => {
     const div = document.createElement("div");
     div.className = "unit";
-    div.innerHTML = `<div class="uname">${u.planned ? "🔒" : "📘"} ${u.name}</div>`;
+    div.innerHTML = `<div class="uname">${u.planned ? "🔒" : "📘"} ${u.name}${u.total_n ? ` · 已完成 ${u.done_n}/${u.total_n}` : ""}</div>`;
     const lv = document.createElement("div");
     lv.className = "lvls";
     (u.levels || []).forEach(l => {
       const b = document.createElement("div");
       b.className = "lvl" + (l.done ? " done" : "");
-      b.innerHTML = `<div class="lv-name">${l.name}</div><div class="lv-status">${l.done ? "已通关 · 最佳连对 " + l.best : l.count + " 题 · 可挑战"}</div>`;
+      const wrongNote = l.wrong ? ` · 错过 ${l.wrong} 次` : "";
+      b.innerHTML = `<div class="lv-name">${l.name}</div><div class="lv-status">${l.done ? "已通关 · 最佳连对 " + l.best + wrongNote : l.count + " 题 · 可挑战" + wrongNote}</div>`;
       b.addEventListener("click", () => startLevel(l.id, l.name));
       lv.appendChild(b);
     });
@@ -225,7 +226,17 @@ async function startLevel(levelId, levelName) {
   await nextQuestion();
 }
 async function nextQuestion() {
-  const q = await (await fetch(`/api/learn/next?child=${encodeURIComponent(CHILD)}&level=${curLevel}&session=${curSession}`)).json();
+  let q;
+  try {
+    q = await (await fetch(`/api/learn/next?child=${encodeURIComponent(CHILD)}&level=${curLevel}&session=${curSession}`)).json();
+  } catch (e) {
+    bubble("网络好像断了——你的进度已经保存,联网后回来继续。");
+    return;
+  }
+  if (q.detail && String(q.detail).includes("session expired")) {
+    curSession = "s-" + Date.now();  // R20: 服务重启后会话失效 → 自动开新会话
+    return nextQuestion();
+  }
   curQid = q.qid;
   $("qTier").textContent = "难度:" + q.tier_cn;
   $("qPrompt").textContent = q.prompt;
@@ -354,6 +365,10 @@ document.querySelectorAll(".games .g").forEach(b =>
 
 /* 防误触:学园版不需要发呆搭话 */
 function pokeOff() {}
+
+/* R20 边界:断网/恢复提示 */
+window.addEventListener("offline", () => bubble("网络断了——别担心,你的进度已经保存。"));
+window.addEventListener("online", () => { bubble("网络回来啦,继续!"); loadMap(); });
 </script>
 </body>
 </html>

@@ -134,11 +134,20 @@ async def profiles():
 async def learn_map(child: str = Query(...)):
     learn = store.load_learn(child)
     meta = _level_meta()
+    # R18 每关错题计数 + 单元完成度
+    wrong_by_level = {}
+    for s in learn.get("sessions", []):
+        if not s.get("correct"):
+            wrong_by_level[s.get("level")] = wrong_by_level.get(s.get("level"), 0) + 1
     for u in meta:
         for l in u["levels"]:
             st = learn.get("levels", {}).get(l["id"], {})
             l["best"] = st.get("best")
             l["done"] = bool(st.get("done"))
+            l["wrong"] = wrong_by_level.get(l["id"], 0)
+        done_levels = [l for l in u["levels"] if l["done"]]
+        u["done_n"] = len(done_levels)
+        u["total_n"] = len(u["levels"])
     return {"child": child, "units": meta, "xp": learn.get("xp", 0),
             "title": _title_for(learn.get("xp", 0)), "badges": _unit_badges(learn),
             "first_seen": learn.get("first_seen")}
