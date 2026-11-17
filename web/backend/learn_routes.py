@@ -254,10 +254,20 @@ async def learn_answer(inp: AnswerIn):
         # 连对 2 → 升一档
         ts_right = topic_state.get("right_streak", 0) + 1
         topic_state["wrong_streak"] = 0
-        if ts_right >= 2 and topic_state.get("tier") != TIERS[-1]:
+        if ts_right >= 3 and topic_state.get("tier") != TIERS[-1]:
+            # R26 快速学习者通道:升档不清零连对计数,累计 3 次连对跳两档
+            old = topic_state["tier"]
+            topic_state["tier"] = _tier_shift(_tier_shift(old, up=True), up=True)
+            topic_state["right_streak"] = 0
+            out["tier_change"] = {"from": old, "to": topic_state["tier"],
+                                  "reason": f"{_topic_name(q['topic'])} 连续答对 3 题,跳级加速"}
+            learn.setdefault("adjust_log", []).append(
+                {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "child": inp.child,
+                 "topic": q["topic"], "from": old, "to": topic_state["tier"], "reason": "连续答对 3 题,跳级"})
+        elif ts_right >= 2 and topic_state.get("tier") != TIERS[-1]:
             old = topic_state["tier"]
             topic_state["tier"] = _tier_shift(old, up=True)
-            topic_state["right_streak"] = 0
+            topic_state["right_streak"] = ts_right  # R26: 升档不清零,累计到 3 跳两档
             out["tier_change"] = {"from": old, "to": topic_state["tier"],
                                   "reason": f"{_topic_name(q['topic'])} 连续答对,难度上调一档"}
             learn.setdefault("adjust_log", []).append(
@@ -408,6 +418,30 @@ async def parent_pin_verify(inp: PinIn):
     auth["fails"] = 0
     store.save_parent_auth(auth)
     return {"ok": True, "token": store.issue_token()}
+
+
+class PrereqIn(BaseModel):
+    child: str
+    prereq_id: str
+    answer: str
+
+
+@router.post("/learn/prereq-answer")
+async def prereq_answer(inp: PrereqIn):
+    """R27 先修诊断闭环:孩子回答先修点的诊断问题 → 判答 → 引导语(不直接给答案)。"""
+    node = next((t for t in KG["topics"] if t["id"] == inp.prereq_id), None)
+    if not node:
+        raise HTTPException(404, "unknown prereq")
+    dq = node.get("diagnostic_question", {})
+    correct = str(inp.answer).strip() == str(dq.get("answer", "")).strip() or         str(dq.get("answer", "")).strip() in str(inp.answer).strip()
+    learn = store.load_learn(inp.child)
+    if correct:
+        learn.setdefault("xp", 0)
+        learn["xp"] += 5
+        store.save_learn(inp.child, learn)
+    msg = ("先修点通过!回去看,那道题现在有思路了吗?" if correct
+           else "还差一点——把「" + node["name"] + "」的课本例子再看一遍,回来再试。")
+    return {"correct": correct, "message": msg, "prereq": inp.prereq_id}
 
 
 def _require_parent(token: str):
