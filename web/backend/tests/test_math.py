@@ -53,7 +53,7 @@ class TestMathGame:
     def test_开局建局并出题(self):
         body = self._start()
         assert body["pool"] == "math_start" and body["math"]["q_tts"]
-        assert SID in MATH_GAMES and 0 <= MATH_GAMES[SID]["answer"] <= 10
+        assert SID in MATH_GAMES and 0 < MATH_GAMES[SID]["answer"] <= 200  # R15:四则混合答案范围
 
     def test_答对连题与终局(self):
         self._start()
