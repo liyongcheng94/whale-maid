@@ -104,6 +104,44 @@ class TestOfflineRouting:
             assert body["idx"] <= len(eggs["triggers"]["sing"])
 
 
+class TestMusicRouting:
+    """歌单路由契约(2026-11-17 唱歌升级为播真实音频;music_fetch.py 入库)。"""
+
+    def test_点歌名跨组命中(self):
+        body = client.post("/api/chat", json={"text": "来一首孤勇者"}).json()
+        assert body["song"] == "song_01_guyongzhe.m4a" and body["song_title"] == "孤勇者"
+        assert body["pool"] == "sing"  # 引子固定取 sing 池
+
+    def test_生日歌分流到生日组(self):
+        body = client.post("/api/chat", json={"text": "唱生日歌"}).json()
+        assert body["song"] == "birthday_01_happy_birthday.m4a" and body["pool"] == "sing"
+
+    def test_哈基米专属词进哈基米组(self):
+        body = client.post("/api/chat", json={"text": "来点哈基米吧！"}).json()
+        assert body["song"] == "hachimi_01_hamanbo.m4a" and body["pool"] == "sing"
+
+    def test_通用音乐词短句进歌曲组随机(self):
+        body = client.post("/api/chat", json={"text": "唱首歌吧"}).json()
+        assert body["pool"] == "sing"
+        assert body["song"] in {"song_01_guyongzhe.m4a", "song_02_wayawa.m4a"}
+
+    def test_生日语境不误触歌单(self):
+        body = client.post("/api/chat", json={"text": "明天是我生日哦"}).json()
+        assert body["pool"] == "birthday" and body["song"] is None
+
+    def test_长句不误触歌单(self):
+        """泛化词只对 ≤15 字短句生效;长句不播真实音频(可落 sing 台词池口癖回应)。"""
+        body = client.post("/api/chat", json={"text": "你说你会唱歌那你说说歌是什么呀我好想知道"}).json()
+        assert body["song"] is None
+
+    def test_音乐返回引子对齐sing池(self):
+        import json
+        eggs = json.loads((Path(__file__).resolve().parents[3] / "config" / "eggs_birthday.json").read_text(encoding="utf-8"))
+        for _ in range(10):
+            body = client.post("/api/chat", json={"text": "听歌"}).json()
+            assert body["idx"] <= len(eggs["triggers"]["sing"]) and body["reply"].strip()
+
+
 class TestSessionMemory:
     def test_多轮记忆累积(self):
         """同 session 连说两句,历史应有 2 轮往返(4 条)。"""
@@ -187,6 +225,20 @@ class TestEggAudio:
 
     def test_不存在的音频404并触发前端回落(self):
         r = client.get("/egg-audio/greeting_99.mp3")
+        assert r.status_code == 404
+
+
+class TestMusicAudio:
+    def test_歌单音频可下发(self):
+        """assets_audio/music 存在时,/music-audio/ 直接 200(引子→歌曲接力契约)。"""
+        music_dir = Path(__file__).resolve().parents[3] / "assets_audio" / "music"
+        if not music_dir.exists() or not any(music_dir.glob("*.m4a")):
+            pytest.skip("歌单音频未入库的环境")
+        r = client.get("/music-audio/song_01_guyongzhe.m4a")
+        assert r.status_code == 200 and "audio" in r.headers["content-type"]
+
+    def test_不存在的歌404并触发前端回落(self):
+        r = client.get("/music-audio/nope_99.m4a")
         assert r.status_code == 404
 
 

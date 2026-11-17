@@ -172,7 +172,8 @@
     <div id="chips">
       <button class="chipbtn util" data-repeat>🔁 再讲一个</button>
       <button class="chipbtn" data-say="生日快乐！">🎂 生日快乐！</button>
-      <button class="chipbtn" data-say="唱首歌吧！">🎵 唱首歌！</button>
+      <button class="chipbtn" data-say="唱首歌吧！">🎵 听首歌！</button>
+      <button class="chipbtn" data-say="来点哈基米吧！">🎶 哈基米！</button>
       <button class="chipbtn" data-say="给我讲个故事！">📖 讲故事！</button>
       <button class="chipbtn" data-say="你想吃白饭吗？">🍚 白饭！</button>
     </div>
@@ -403,6 +404,25 @@ function poke() {
   }, IDLE_MS);
 }
 
+/* ---- 歌单播放:引子(sing 池预生成音频)→ 接力播真实歌曲(2026-11-17 唱歌升级) ---- */
+function waitAudioDone(timeoutMs) {
+  return new Promise(res => {
+    const t0 = Date.now();
+    (function poll() {
+      if (!isPlaying() || Date.now() - t0 > (timeoutMs || 30000)) return res();
+      setTimeout(poll, 200);
+    })();
+  });
+}
+async function playIntroThenSong(pre, file, title) {
+  await sayEgg(pre.pool, null, pre);   // 引子:sing 池预生成音频+表情+气泡
+  await waitAudioDone();               // 引子播完(含 TTS 回落路径)再接歌
+  bubble("♪ 正在播放《" + title + "》", 8000);
+  setEmo("happy");
+  animTrigger("wiggle");
+  if (!(await playUrl("/music-audio/" + file))) await speak("♪ " + title, "happy"); // 404 回落 TTS
+}
+
 /* ---- 对话:DeepSeek(后端,多轮记忆)→ 离线兜底(直连预生成音频) ---- */
 async function chat(text) {
   poke();
@@ -415,7 +435,9 @@ async function chat(text) {
     });
     const data = await r.json();
     chip.textContent = data.source === "deepseek" ? "🧠 聪明模式" : "⚠️ 台词兜底";
-    if (data.source === "offline" && data.pool && data.idx) {
+    if (data.song) {
+      await playIntroThenSong({ text: data.reply, idx: data.idx, pool: data.pool }, data.song, data.song_title || "");
+    } else if (data.source === "offline" && data.pool && data.idx) {
       await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
     } else {
       lastPool = "fallback";

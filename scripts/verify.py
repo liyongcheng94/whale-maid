@@ -118,6 +118,28 @@ def gate_config():
         problems.append("whalemaid.config.yaml 人设/表情协议与 config/ 未同步(标准模式·大肥鱼)")
     if "冉冉姐姐" not in (ROOT / "config" / "persona.md").read_text(encoding="utf-8"):
         problems.append("persona.md 缺冉冉姐姐人设")
+    # 歌单机器合同(config/playlist.json;2026-11-17 唱歌升级)
+    try:
+        pl = json.loads((ROOT / "config" / "playlist.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        return problems + [f"playlist.json 解析失败: {e!r}"]
+    if list(pl["groups"].keys()) != ["birthday", "hachimi", "songs"]:
+        problems.append("playlist.json 组顺序即路由优先级,须为 birthday/hachimi/songs")
+    alias_seen = {}
+    for gname, g in pl["groups"].items():
+        if not (isinstance(g.get("keywords"), list) and g["keywords"]):
+            problems.append(f"playlist 组 {gname} 缺 keywords")
+        for s in g.get("songs", []):
+            if not re.fullmatch(r"[a-z0-9_]+\.(m4a|mp3)", s.get("file", "")):
+                problems.append(f"playlist {gname}/{s.get('file')} 文件名须 ASCII 小写下划线")
+            for k in ("title", "alias", "source"):
+                if not s.get(k):
+                    problems.append(f"playlist {gname}/{s.get('file')} 缺 {k}")
+            for a in s.get("alias", []):
+                low = a.lower()
+                if low in alias_seen and alias_seen[low] != gname:
+                    problems.append(f"playlist alias「{a}」跨组冲突({alias_seen[low]} vs {gname})")
+                alias_seen[low] = gname
     return problems
 
 
@@ -134,6 +156,21 @@ def gate_audio():
         for i in range(1, len(lines) + 1):
             if not (mp3_dir / f"{pool}_{i}.mp3").exists():
                 problems.append(f"缺音频 {pool}_{i}.mp3(跑 scripts/make_egg_audio.py)")
+    # 歌单音频对齐(assets_audio/music;缺失时 WARN 不 FAIL,与彩蛋音频同口径)
+    music_dir = ROOT / "assets_audio" / "music"
+    if not music_dir.exists():
+        WARNS.append("[audio] assets_audio/music 不存在(未跑 scripts/music_fetch.py)")
+        return problems
+    pl = json.loads((ROOT / "config" / "playlist.json").read_text(encoding="utf-8"))
+    registered = set()
+    for g in pl["groups"].values():
+        for s in g["songs"]:
+            registered.add(s["file"])
+            if not (music_dir / s["file"]).exists():
+                problems.append(f"playlist 登记但磁盘缺失: {s['file']}(跑 scripts/music_fetch.py)")
+    for f in music_dir.iterdir():
+        if f.suffix in (".m4a", ".mp3") and f.name not in registered:
+            WARNS.append(f"[audio] music 目录孤儿文件未登记歌单: {f.name}")
     return problems
 
 

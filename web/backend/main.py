@@ -36,6 +36,11 @@ TTS_CACHE = BACKEND / "tts_cache"
 TTS_CACHE.mkdir(exist_ok=True)
 
 EGGS = json.loads((CONFIG / "eggs_birthday.json").read_text(encoding="utf-8"))
+# 歌单(config/playlist.json):唱歌升级为播真实音频(2026-11-17);组顺序即路由优先级 birthday > hachimi > songs
+PLAYLIST = json.loads((CONFIG / "playlist.json").read_text(encoding="utf-8"))
+MUSIC_DIR = PROJECT / "assets_audio" / "music"
+# 泛化音乐词:仅对短句(≤15字)生效,长句如「你会唱歌吗」交 LLM 正常聊天
+_MUSIC_GENERIC_WORDS = {"唱", "歌", "音乐", "听歌", "唱歌", "来首歌", "唱首歌"}
 # 双模式人设:adult=大肥鱼标准版(docs/09 正典,默认),child=冉冉姐姐生日模式(11-27/手动切换);儿童化调整只影响 child
 SYSTEM_PROMPTS = {
     "child": (CONFIG / "server_prompt.txt").read_text(encoding="utf-8").strip(),
@@ -114,6 +119,27 @@ def _adultize(reply: str, mode: str) -> str:
     return reply.replace("鱼片", "冉冉姐姐")  # 兜底:池外来源若含旧称呼也归一
 
 
+def _music_result(song):
+    """命中歌单:引子固定取 sing 池(台词语义已预告「唱整首」),歌文件由前端接力播放。"""
+    idx, reply = _pick_idx("sing")
+    return reply, "sing", idx, EGGS["emo"].get("sing"), song["file"], song["title"]
+
+
+def _music_route(text: str):
+    """三段式路由:①点歌名(alias 子串,跨全组) > ②③组关键词随机(组顺序即优先级)。
+    命中返回 (引子台词, "sing", idx, emo, 歌文件, 歌名);未命中返回 None。
+    在 DeepSeek 之前拦截——音乐请求不进 LLM,有 key 时点歌也生效。"""
+    t = text.lower()
+    for g in PLAYLIST["groups"].values():
+        for s in g["songs"]:
+            if any(a.lower() in t for a in s.get("alias", [])):
+                return _music_result(s)
+        for k in g.get("keywords", []):
+            if k in t and (k not in _MUSIC_GENERIC_WORDS or len(t) <= 15):
+                return _music_result(random.choice(g["songs"]))
+    return None
+
+
 def _offline_reply(text: str):
     """关键词 → 彩蛋池;无命中随机兜底。keyword_map 的书写顺序即优先级。
     返回 (台词, 池名, 序号, 前端表情键)——池+序号让前端能命中零延迟的预生成音频。"""
@@ -142,7 +168,13 @@ async def chat(inp: ChatIn):
     if not text:
         idx, reply = _pick_idx("fallback")
         return {"reply": _adultize(reply, mode), "emo": EGGS["emo"].get("fallback"), "pool": "fallback",
-                "idx": idx, "source": "offline"}
+                "idx": idx, "source": "offline", "song": None, "song_title": None}
+    # 音乐路由前置拦截(在 DeepSeek 之前):命中即播歌,不进 LLM 也不入会话记忆
+    music = _music_route(text)
+    if music:
+        reply, pool, idx, emo, song_file, song_title = music
+        return {"reply": _adultize(reply, mode), "emo": emo, "pool": pool, "idx": idx,
+                "source": "offline", "song": song_file, "song_title": song_title}
     # 多轮记忆:系统提示 + 最近 N 轮 + 本句
     history = SESSIONS.setdefault(inp.session_id[:64], collections.deque(maxlen=SESSION_TURNS * 2))
     messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
@@ -185,7 +217,8 @@ async def chat(inp: ChatIn):
                                 "whale": reply, "source": source}, ensure_ascii=False) + "\n")
     except Exception:
         pass
-    return {"reply": reply, "emo": emo, "pool": pool, "idx": idx, "source": source}
+    return {"reply": reply, "emo": emo, "pool": pool, "idx": idx, "source": source,
+            "song": None, "song_title": None}
 
 
 @app.get("/api/tts")
@@ -210,6 +243,10 @@ async def tts(text: str = Query(..., max_length=150), emo: str = Query("normal")
 # 预生成彩蛋音频:零延迟下发(assets_audio 由 make_egg_audio.py 产出,CI 环境缺失时跳过挂载,前端自动回落)
 if (PROJECT / "assets_audio" / "mp3").exists():
     app.mount("/egg-audio", StaticFiles(directory=str(PROJECT / "assets_audio" / "mp3")), name="egg-audio")
+
+# 歌单音频(assets_audio/music,go-music-dl 下载入库;缺失时跳过挂载,前端回落 TTS)
+if MUSIC_DIR.exists():
+    app.mount("/music-audio", StaticFiles(directory=str(MUSIC_DIR)), name="music-audio")
 
 
 @app.get("/api/history")

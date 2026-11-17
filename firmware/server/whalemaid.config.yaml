@@ -17,6 +17,7 @@ prompt: |
 
 selected_module:
   LLM: DeepSeekLLM
+  Intent: function_call  # 语音点歌「唱首歌/来点哈基米」经意图识别触发 play_music(2026-11-17 歌单升级)
 
 LLM:
   DeepSeekLLM:
@@ -24,3 +25,22 @@ LLM:
     model_name: deepseek-v4-flash
     url: https://api.deepseek.com
     api_key: 你的deepseek web key
+
+# 意图识别:function_call 让 LLM 以工具调用方式触发自带插件(play_music 在系统默认加载列表,勿重复声明加载)
+Intent:
+  function_call:
+    type: function_call
+    functions:
+      - play_music
+
+# 音乐播放插件:歌单与 assets_audio/music 同源(config/playlist.json;来源见 assets_audio/music/ATTRIBUTION.md)
+plugins:
+  play_music:
+    music_dir: "./music"  # 设备到手后把歌单音频拷到 xiaozhi-server data/.config.yaml 同级 ./music/
+    music_ext:
+      - ".mp3"
+      - ".wav"
+      - ".p3"
+    refresh_time: 300
+# 注意:入库歌曲为 m4a(前端 web 直接可播);固件侧仅支持 mp3/wav/p3,部署时用
+# `python scripts/music_fetch.py --fw-sync`(或 ffmpeg -i x.m4a -ar 24000 -ac 1 x.mp3)转码后拷入 ./music/
