@@ -18,7 +18,12 @@
     "idle": "normal",
     "fallback": "normal",
     "star_praise": "happy",
-    "star_repeat": "normal"
+    "star_repeat": "normal",
+    "greeting_morning": "happy",
+    "greeting_noon": "happy",
+    "greeting_afternoon": "happy",
+    "greeting_evening": "happy",
+    "greeting_night": "sleepy"
   },
   "triggers": {
     "greeting": [
@@ -85,6 +90,23 @@
     ],
     "star_repeat": [
       "刚刚才打卡过呀~星星不会跑,休息一下再来!"
+    ],
+    "greeting_morning": [
+      "冉冉姐姐早安!太阳晒屁股啦,今天也要元气满满哦!",
+      "咕噜噜~早上好!我梦到好大一碗白饭,分你一半!"
+    ],
+    "greeting_noon": [
+      "午安~冉冉姐姐吃过饭饭了吗?小鲸灵想吃白饭!"
+    ],
+    "greeting_afternoon": [
+      "下午好呀冉冉姐姐~陪我玩一会儿吧,玩什么你说了算!"
+    ],
+    "greeting_evening": [
+      "晚上好呀~今天过得开心吗?讲给小鲸灵听听!"
+    ],
+    "greeting_night": [
+      "夜深啦……冉冉姐姐该睡觉觉了,我唱歌给你听,盖好被子哦。",
+      "嘘……都这么晚了。冉冉姐姐闭上眼睛,小鲸灵守着你。"
     ]
   },
   "keyword_map": {

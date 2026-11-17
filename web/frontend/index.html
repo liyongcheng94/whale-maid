@@ -755,9 +755,13 @@ document.addEventListener("visibilitychange", () => {
 /* ---- 启动 ---- */
 fetch(EGGS_URL).then(r => r.json()).then(j => { EGGS = j; }).catch(() => {});
 setTimeout(() => {
-  const startPool = isBirthday || force ? "birthday" : "greeting";
   if (isBirthday || force) spawnParticles("confetti", innerWidth / 2, 130);
-  sayEgg(startPool, null);
+  // R2 时间感知问候:后端按时段选池(生日/预览日仍走生日池)
+  if (isBirthday || force) {
+    sayEgg("birthday", null);
+  } else {
+    fetch("/api/greeting").then(r => r.json()).then(g => sayEgg(g.pool, null, g)).catch(() => sayEgg("greeting", null));
+  }
   poke();
 }, 900);
 </script>

@@ -614,6 +614,27 @@ async def history(limit: int = 100):
     return {"items": items}
 
 
+# ---- R2 时间感知问候(docs/10):按时段选问候池,深夜自动转哄睡语气 ----
+def _greeting_pool(hour: int):
+    """0-23 时 → (池名, 表情)。深夜 23~5 哄睡,5~11 早,11~14 午,14~19 下午,19~23 晚。"""
+    if 23 <= hour or hour < 5:
+        return "greeting_night", "sleepy"
+    if hour < 11:
+        return "greeting_morning", "happy"
+    if hour < 14:
+        return "greeting_noon", "happy"
+    if hour < 19:
+        return "greeting_afternoon", "happy"
+    return "greeting_evening", "happy"
+
+
+@app.get("/api/greeting")
+async def greeting():
+    pool, emo = _greeting_pool(time.localtime().tm_hour)
+    idx, text = _pick_idx(pool)
+    return {"pool": pool, "idx": idx, "text": text, "emo": EGGS["emo"].get(pool, emo)}
+
+
 # ---- R1 习惯打卡星星系统(docs/10):data/stars.json 持久化,打卡=星星+1 ----
 STARS_FILE = PROJECT / "data" / "stars.json"
 STAR_TASKS = {"brush": "刷牙", "tidy": "收拾玩具", "sleep": "早睡"}
