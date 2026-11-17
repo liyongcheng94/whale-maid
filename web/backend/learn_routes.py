@@ -148,6 +148,14 @@ async def learn_map(child: str = Query(...)):
         done_levels = [l for l in u["levels"] if l["done"]]
         u["done_n"] = len(done_levels)
         u["total_n"] = len(u["levels"])
+    # R25 解锁链(结构性):首个可玩单元直接解锁,后续单元需前一可玩单元全部通关
+    prev_done = True
+    for u in meta:
+        if u["planned"]:
+            u["unlocked"] = False
+            continue
+        u["unlocked"] = prev_done
+        prev_done = u["total_n"] > 0 and u["done_n"] == u["total_n"]
     return {"child": child, "units": meta, "xp": learn.get("xp", 0),
             "title": _title_for(learn.get("xp", 0)), "badges": _unit_badges(learn),
             "first_seen": learn.get("first_seen")}

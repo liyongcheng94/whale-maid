@@ -193,15 +193,16 @@ async function loadMap() {
   m.units.forEach(u => {
     const div = document.createElement("div");
     div.className = "unit";
-    div.innerHTML = `<div class="uname">${u.planned ? "🔒" : "📘"} ${u.name}${u.total_n ? ` · 已完成 ${u.done_n}/${u.total_n}` : ""}</div>`;
+    div.innerHTML = `<div class="uname">${u.planned ? "🔒" : "📘"} ${u.name}${u.total_n ? ` · 已完成 ${u.done_n}/${u.total_n}` : ""}${u.unlocked === false && !u.planned ? " 🔒 完成上一单元解锁" : ""}</div>`;
     const lv = document.createElement("div");
     lv.className = "lvls";
     (u.levels || []).forEach(l => {
       const b = document.createElement("div");
-      b.className = "lvl" + (l.done ? " done" : "");
+      const locked = u.unlocked === false && !u.planned;
+      b.className = "lvl" + (l.done ? " done" : "") + (locked ? " planned" : "");
       const wrongNote = l.wrong ? ` · 错过 ${l.wrong} 次` : "";
       b.innerHTML = `<div class="lv-name">${l.name}</div><div class="lv-status">${l.done ? "已通关 · 最佳连对 " + l.best + wrongNote : l.count + " 题 · 可挑战" + wrongNote}</div>`;
-      b.addEventListener("click", () => startLevel(l.id, l.name));
+      if (!locked) b.addEventListener("click", () => startLevel(l.id, l.name));
       lv.appendChild(b);
     });
     if (u.planned) { const p = document.createElement("div"); p.className = "lv-status"; p.textContent = "建设中,后续开放"; lv.appendChild(p); }
