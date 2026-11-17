@@ -42,17 +42,20 @@ class TestPlaylistContract:
                     seen[low] = gname
 
     def test_file与磁盘对齐(self):
-        """file 必须真实存在于 assets_audio/music/(前端 404 回落是兜底,不是借口)。"""
-        if not MUSIC_DIR.exists():
+        """file 必须真实存在于 assets_audio/music/(前端 404 回落是兜底,不是借口)。
+        skip 条件 = 磁盘零歌曲(未入库环境);不能用「目录不存在」判断——
+        main.py import 时会 mkdir covers/lyrics,CI 上目录恒存在。"""
+        on_disk = {f.name for f in MUSIC_DIR.iterdir() if f.suffix in (".m4a", ".mp3")} if MUSIC_DIR.exists() else set()
+        if not on_disk:
             pytest.skip("歌单音频未入库的环境(CI)")
-        on_disk = {f.name for f in MUSIC_DIR.iterdir() if f.suffix in (".m4a", ".mp3")}
         for gname, g in PL["groups"].items():
             for s in g["songs"]:
                 assert s["file"] in on_disk, f"{gname}/{s['file']} 登记了但磁盘缺失"
 
     def test_磁盘孤儿文件登记(self):
         """入库未登记的文件 = 永远播不到的死资产(警告级:不 fail,但 CI 会提醒)。"""
-        if not MUSIC_DIR.exists():
+        on_disk = {f.name for f in MUSIC_DIR.iterdir() if f.suffix in (".m4a", ".mp3")} if MUSIC_DIR.exists() else set()
+        if not on_disk:
             pytest.skip("歌单音频未入库的环境(CI)")
         registered = {s["file"] for g in PL["groups"].values() for s in g["songs"]}
         orphans = [f.name for f in MUSIC_DIR.iterdir()
