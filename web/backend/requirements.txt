@@ -1,4 +1,5 @@
-fastapi>=0.110
-uvicorn[standard]>=0.29
-httpx>=0.27
-edge-tts>=6.1
+# 运行依赖(MindVault 模式:范围约束 + 行内注释记踩坑;安装: pip install -r requirements.txt)
+fastapi>=0.110,<0.129   # 0.128.8 实测通过;上界防破坏性更新
+uvicorn[standard]>=0.29,<0.40   # 0.39.0 实测
+httpx>=0.27,<0.29       # 0.28.1 实测;/api/chat 外呼 + TestClient 依赖
+edge-tts>=6.1,<8        # 7.3.1 实测;依赖微软 TTS 网络,失败由前端 speechSynthesis 兜底
