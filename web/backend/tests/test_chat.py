@@ -121,9 +121,12 @@ class TestMusicRouting:
         assert body["song"] == "hachimi_01_hamanbo.m4a" and body["pool"] == "sing"
 
     def test_通用音乐词短句进歌曲组随机(self):
+        import json as _json
+        songs = {s["file"] for s in _json.loads((Path(__file__).resolve().parents[3] / "config" / "playlist.json")
+                                                .read_text(encoding="utf-8"))["groups"]["songs"]["songs"]}
         body = client.post("/api/chat", json={"text": "唱首歌吧"}).json()
         assert body["pool"] == "sing"
-        assert body["song"] in {"song_01_guyongzhe.m4a", "song_02_wayawa.m4a"}
+        assert body["song"] in songs  # 曲库会随点播动态增长,断言只锁组别不锁文件
 
     def test_生日语境不误触歌单(self):
         body = client.post("/api/chat", json={"text": "明天是我生日哦"}).json()
@@ -258,7 +261,7 @@ def test_resolve_song点歌口径():
     assert g == "birthday" and s["title"] == "生日快乐歌"
     g, s = _resolve_song("哈基米曼波")
     assert g == "hachimi" and s["file"] == "hachimi_01_hamanbo.m4a"
-    g, s = _resolve_song("稻香")  # 曲库外歌名 → None(前端走 /api/music/fetch 实时捞)
+    g, s = _resolve_song("zzz不存在之歌xyz")  # 曲库外歌名 → None(前端走 /api/music/fetch 实时捞)
     assert g is None and s is None
     g, s = _resolve_song("随机")
     assert g in {"birthday", "hachimi", "songs"} and s["file"]
