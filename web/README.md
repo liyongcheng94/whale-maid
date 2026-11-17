@@ -44,7 +44,7 @@ uvicorn main:app --host 0.0.0.0 --port 8100
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | DEEPSEEK_API_KEY | 空 | 配置后启用聪明模式 |
-| DEEPSEEK_MODEL | deepseek-chat | 以 DeepSeek 官方为准改这里 |
+| DEEPSEEK_MODEL | deepseek-v4-flash | deepseek-chat 2026-07-24 起弃用;以 DeepSeek 官方为准改这里 |
 | WHALE_TTS_VOICE | zh-CN-XiaoyiNeural | 晓伊(活泼女声);可换 zh-CN-XiaoxiaoNeural |
 
 ## 端口
