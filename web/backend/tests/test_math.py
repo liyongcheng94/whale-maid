@@ -35,12 +35,15 @@ class TestNumberExtraction:
 
 
 class TestQuestionGen:
-    def test_五十字口径与答案范围(self):
-        for _ in range(50):
+    def test_四则混合口径(self):
+        """R15:三种形态((a+b)×c / a×b-c / a÷c+b),eval 自洽,答案为正整数。"""
+        forms = set()
+        for _ in range(60):
             q, qtts, ans = _math_q()
-            assert 0 <= ans <= 10
-            assert ("+" in q and "加" in qtts) or ("-" in q and "减" in qtts)
-            assert eval(q) == ans
+            assert ans > 0 and ans == eval(q.replace("×", "*").replace("÷", "/"))
+            assert ("(" in q) or ("×" in q) or ("÷" in q)
+            forms.add(("(" if "(" in q else "×" if "×" in q else "÷"))
+        assert len(forms) == 3  # 三种形态都被覆盖
 
 
 class TestMathGame:
@@ -64,7 +67,7 @@ class TestMathGame:
 
     def test_答错提示正确答案不冷场(self):
         self._start()
-        wrong = client.post("/api/chat", json={"text": "99", "session_id": SID}).json()
+        wrong = client.post("/api/chat", json={"text": "0", "session_id": SID}).json()  # 答案恒≥3,0 必错
         assert wrong["pool"] is None  # 动态合成(含正确答案)走实时 TTS
         assert "正确答案" in wrong["reply"]
         assert SID in MATH_GAMES  # 局还活着
@@ -84,6 +87,9 @@ class TestMathGame:
     def test_中文数字作答(self):
         self._start()
         ans = MATH_GAMES[SID]["answer"]
-        zh = {0: "零", 1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
-        body = client.post("/api/chat", json={"text": zh[ans], "session_id": SID}).json()
+        if ans > 10:
+            body = client.post("/api/chat", json={"text": str(ans), "session_id": SID}).json()
+        else:
+            zh = {0: "零", 1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
+            body = client.post("/api/chat", json={"text": zh[ans], "session_id": SID}).json()
         assert body["pool"] == "math_right" or (body["pool"] is None and MATH_ROUNDS == 1)

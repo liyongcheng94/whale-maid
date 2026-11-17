@@ -742,13 +742,18 @@ _ZH_NUM = {"零": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
 
 
 def _math_q():
-    """生成 10 以内加减题,返回 (算式显示, TTS 读法, 答案)。"""
-    a, b = random.randint(0, 5), random.randint(0, 5)
-    if random.random() < 0.5 or a < b:
-        a, b = max(a, b), min(a, b)
-        if random.random() < 0.5:
-            return f"{a}+{b}", f"{a}加{b}", a + b
-    return f"{a}-{b}", f"{a}减{b}", a - b
+    """R15:四则混合两步运算(四下第 1 单元括号),三种形态轮换。
+    返回 (算式显示, TTS 读法, 答案)。"""
+    k = random.randint(0, 2)
+    if k == 0:  # (a+b)×c
+        a, b, c = random.randint(1, 20), random.randint(1, 20), random.randint(2, 5)
+        return f"({a}+{b})×{c}", f"括号里{a}加{b},括号外乘{c}", (a + b) * c
+    if k == 1:  # a×b-c
+        a, b = random.randint(3, 9), random.randint(3, 9)
+        c = random.randint(1, a * b - 1)
+        return f"{a}×{b}-{c}", f"{a}乘{b}再减{c}", a * b - c
+    c, kk, b = random.randint(2, 9), random.randint(2, 9), random.randint(1, 9)
+    return f"{c * kk}÷{c}+{b}", f"{c * kk}除以{c}再加{b}", kk + b
 
 
 def _extract_number(text: str):
