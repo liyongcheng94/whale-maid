@@ -131,23 +131,23 @@ class TestSessionMemory:
 
 
 class TestModes:
-    """儿童/大人双模式:同一台词池,大人模式自动替换称呼(deepintask:零重复内容成本)。
+    """标准(大肥鱼/鱼片)/生日(冉冉姐姐)双模式:同一台词池,标准模式自动替换称呼(零重复内容成本)。
     真不变量(对池内所有随机台词都成立):adult 回复绝不出现「冉冉姐姐」,child 绝不出现「鱼片」。"""
 
-    def test_大人模式称呼不串台(self):
-        for _ in range(6):
-            body = client.post("/api/chat", json={"text": "明天是我生日哦", "mode": "adult"}).json()
-            assert "冉冉姐姐" not in body["reply"], body["reply"]
-
-    def test_儿童模式称呼不串台(self):
+    def test_标准模式称呼不串台(self):
         for _ in range(6):
             body = client.post("/api/chat", json={"text": "明天是我生日哦"}).json()
+            assert "冉冉姐姐" not in body["reply"], body["reply"]
+
+    def test_生日模式称呼不串台(self):
+        for _ in range(6):
+            body = client.post("/api/chat", json={"text": "明天是我生日哦", "mode": "child"}).json()
             assert "鱼片" not in body["reply"], body["reply"]
 
-    def test_非法mode回落儿童(self):
+    def test_非法mode回落标准模式(self):
         for _ in range(3):
             body = client.post("/api/chat", json={"text": "明天是我生日哦", "mode": "hack"}).json()
-            assert "鱼片" not in body["reply"], body["reply"]
+            assert "冉冉姐姐" not in body["reply"], body["reply"]
 
 
 class TestHistory:

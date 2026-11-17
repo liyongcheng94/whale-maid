@@ -66,13 +66,12 @@ class TestPersonaSync:
             assert f"({tag})" in prompt, f"prompt 缺表情标记 ({tag})"
 
     def test_whalemaid配置与server_prompt同步(self):
-        """固件服务端覆盖配置的 prompt 段落须包含 server_prompt 的关键约束。"""
+        """固件服务端覆盖配置的 prompt 段落须包含标准模式(大肥鱼)关键约束。"""
         yaml_text = _load("firmware/server/whalemaid.config.yaml")
-        prompt = _load("config/server_prompt.txt")
-        assert "冉冉姐姐" in yaml_text and "生日" in yaml_text
-        assert "(开心)" in yaml_text and "(困)" in yaml_text  # 表情协议已同步
+        adult = _load("config/server_prompt_adult.txt")
+        assert "鱼片" in yaml_text and "(开心)" in yaml_text and "(困)" in yaml_text
         assert "1~2 句" in yaml_text
-        assert "(开心)" in prompt  # 交叉确认
+        assert "(开心)" in adult  # 表情协议交叉确认
 
     def test_persona_md存在且为权威版(self):
         persona = _load("config/persona.md")

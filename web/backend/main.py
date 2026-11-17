@@ -36,7 +36,7 @@ TTS_CACHE = BACKEND / "tts_cache"
 TTS_CACHE.mkdir(exist_ok=True)
 
 EGGS = json.loads((CONFIG / "eggs_birthday.json").read_text(encoding="utf-8"))
-# 双模式人设:child=冉冉姐姐生日版(默认),adult=原版鱼片(docs/03 人设);儿童化调整只影响 child
+# 双模式人设:adult=大肥鱼标准版(docs/09 正典,默认),child=冉冉姐姐生日模式(11-27/手动切换);儿童化调整只影响 child
 SYSTEM_PROMPTS = {
     "child": (CONFIG / "server_prompt.txt").read_text(encoding="utf-8").strip(),
     "adult": (CONFIG / "server_prompt_adult.txt").read_text(encoding="utf-8").strip(),
@@ -86,7 +86,7 @@ app = FastAPI(title="whale-maid web", version="2.0-birthday")
 class ChatIn(BaseModel):
     text: str
     session_id: str = "toy"
-    mode: str = "child"  # child | adult
+    mode: str = "adult"  # adult(默认 · 大肥鱼) | child(生日模式)
 
 
 def _split_emo(reply: str):
@@ -139,7 +139,7 @@ async def eggs():
 @app.post("/api/chat")
 async def chat(inp: ChatIn):
     text = inp.text.strip()[:500]
-    mode = inp.mode if inp.mode in SYSTEM_PROMPTS else "child"
+    mode = inp.mode if inp.mode in SYSTEM_PROMPTS else "adult"
     if not text:
         idx, reply = _pick_idx("fallback")
         return {"reply": _adultize(reply, mode), "emo": EGGS["emo"].get("fallback"), "pool": "fallback",

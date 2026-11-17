@@ -114,8 +114,8 @@ def gate_config():
         if f"({tag})" not in prompt:
             problems.append(f"server_prompt.txt 缺表情标记 ({tag})")
     yaml_text = (ROOT / "firmware" / "server" / "whalemaid.config.yaml").read_text(encoding="utf-8")
-    if "冉冉姐姐" not in yaml_text or "(开心)" not in yaml_text:
-        problems.append("whalemaid.config.yaml 人设/表情协议与 config/ 未同步")
+    if "鱼片" not in yaml_text or "(开心)" not in yaml_text:
+        problems.append("whalemaid.config.yaml 人设/表情协议与 config/ 未同步(标准模式·大肥鱼)")
     if "冉冉姐姐" not in (ROOT / "config" / "persona.md").read_text(encoding="utf-8"):
         problems.append("persona.md 缺冉冉姐姐人设")
     return problems

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>小鲸灵 · 冉冉姐姐的小鲸鱼</title>
+<title>小鲸灵 · 大肥鱼</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0e5a8f">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -135,7 +135,7 @@
       <button id="mute" title="声音开关">🔊</button>
       <button id="fs" title="全屏">⛶</button>
     </div>
-    <div id="banner">🎂 冉冉姐姐,生日快乐!</div>
+    <div id="banner">🎂 冉冉姐姐,生日快乐!</div><!-- 生日横幅:仅 11/20~11/30 显示(见 JS) -->
     <div id="chip">💬 台词模式</div>
   </div>
 
@@ -232,8 +232,8 @@
     </label>
     <label class="drow">模式
       <select id="mode">
-        <option value="child">儿童模式 · 冉冉姐姐</option>
-        <option value="adult">大人模式 · 鱼片</option>
+        <option value="adult">标准模式 · 大肥鱼</option>
+        <option value="child">生日模式 · 冉冉姐姐</option>
       </select>
     </label>
     <button id="clearMem" class="dbtn">🧹 清空小鲸灵的记忆</button>
@@ -246,11 +246,18 @@
 const THINKING = "让我想想……唔,让我再想亿会儿。";
 let SESSION_ID = localStorage.getItem("wm_sid") || ("toy-" + new Date().toISOString().slice(0, 10));
 const EGGS_URL = "/api/eggs";
-let EGGS = { triggers: { touch_head: ["咕噜噜?"], touch_belly: ["咕噜噜!"], greeting: ["冉冉姐姐好!"], hush: ["好啦好啦……"], idle: ["冉冉姐姐,陪我玩嘛~"], fallback: ["咕噜噜……"] }, emo: {}, keyword_map: {} };
+let EGGS = { triggers: { touch_head: ["咕噜噜?"], touch_belly: ["咕噜噜!"], greeting: ["你好呀!"], hush: ["好啦好啦……"], idle: ["陪我玩嘛~"], fallback: ["咕噜噜……"] }, emo: {}, keyword_map: {} };
 let curAudio = null, hideTimer = null, rec = null, listening = false, lastPool = "greeting";
 let audioVolume = Number(localStorage.getItem("wm_vol") ?? "1");
 if (Number.isNaN(audioVolume)) audioVolume = 1;
-let chatMode = localStorage.getItem("wm_mode") || "child";
+let chatMode = localStorage.getItem("wm_mode") || "adult";
+/* 生日横幅:仅 11/20~11/30 显示(生日冲刺,平时不占品牌位) */
+{
+  const _d = new Date();
+  if (!(_d.getMonth() === 10 && _d.getDate() >= 20 && _d.getDate() <= 30)) {
+    document.getElementById("banner").style.display = "none";
+  }
+}
 
 const $ = id => document.getElementById(id);
 const speech = $("speech"), whaleG = $("whaleG"), chip = $("chip");
@@ -500,7 +507,7 @@ if (SR) {
   rec.lang = "zh-CN"; rec.interimResults = false; rec.maxAlternatives = 1;
   rec.onresult = e => chat(e.results[0][0].transcript);
   rec.onend = () => setListen(false);
-  rec.onerror = () => { setListen(false); bubble("呜……我听不清,冉冉姐姐用字字告诉我好不好?"); };
+  rec.onerror = () => { setListen(false); bubble("呜……我听不清,换个说法或打字告诉我好不好?"); };
 }
 const micBtn = $("mic");
 function setListen(on) {
@@ -568,7 +575,7 @@ volSlider.addEventListener("input", () => {
   if (curAudio) curAudio.volume = audioVolume;
 });
 
-/* 模式:儿童(冉冉姐姐)/ 大人(鱼片) */
+/* 模式:标准(大肥鱼/鱼片,默认)/ 生日(冉冉姐姐) */
 const modeSel = $("mode");
 modeSel.value = chatMode;
 modeSel.addEventListener("change", () => {
