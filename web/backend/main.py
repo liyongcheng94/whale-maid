@@ -109,10 +109,9 @@ def _pick(trigger: str) -> str:
 
 
 def _adultize(reply: str, mode: str) -> str:
-    """大人模式把儿童版称呼换回「鱼片」(台词池单一来源,零重复内容成本)。"""
-    if mode == "adult":
-        return reply.replace("冉冉姐姐", "鱼片")
-    return reply
+    """称呼统一为「冉冉姐姐」(2026-11-17 用户拍板):台词池基准称呼即最终称呼,
+    不再做大人模式替换,保留函数签名以稳调用点与测试。"""
+    return reply.replace("鱼片", "冉冉姐姐")  # 兜底:池外来源若含旧称呼也归一
 
 
 def _offline_reply(text: str):

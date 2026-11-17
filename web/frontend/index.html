@@ -545,14 +545,14 @@ volSlider.addEventListener("input", () => {
   if (curAudio) curAudio.volume = audioVolume;
 });
 
-/* 模式:标准(大肥鱼/鱼片,默认)/ 生日(冉冉姐姐) */
+/* 模式:标准(大肥鱼,默认)/ 生日(冉冉姐姐生日版)——称呼统一「冉冉姐姐」 */
 const modeSel = $("mode");
 modeSel.value = chatMode;
 modeSel.addEventListener("change", () => {
   chatMode = modeSel.value;
   localStorage.setItem("wm_mode", chatMode);
   stopAudioOnly();
-  speak(chatMode === "adult" ? "(傲娇)哼,鱼片,想聊什么?" : "(开心)冉冉姐姐回来啦!继续陪我玩!",
+  speak(chatMode === "adult" ? "(傲娇)哼,冉冉姐姐,想聊什么?" : "(开心)冉冉姐姐回来啦!继续陪我玩!",
     chatMode === "adult" ? "pouty" : "happy");
 });
 
