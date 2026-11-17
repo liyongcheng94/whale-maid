@@ -86,6 +86,7 @@ class TestAdaptiveFlow:
         assert learn["adjust_log"][-1]["reason"].startswith("连续答对")
 
     def test_答错两次降一档带脚手架(self):
+        """R6 起梯度为三次错过题:第二次错触发降档+中间步提示,第三次错过题。"""
         learn = store.load_learn(CHILD + "x")
         learn.setdefault("topic_state", {}).setdefault("m_addsub_rel", {"tier": "standard"})
         store.save_learn(CHILD + "x", learn)
@@ -97,8 +98,12 @@ class TestAdaptiveFlow:
         assert r1["retry"] is True and r1["scaffold"]  # 第一次错:脚手架+同题重试
         r2 = client.post("/api/learn/answer", json={
             "child": CHILD + "x", "session": "sx", "qid": qid, "answer": "99999", "time_s": 2}).json()
-        assert r2["retry"] is False and r2["scaffold"]  # 第二次错:过题
-        assert r2["tier_change"] and r2["tier_change"]["to"] == "basic"
+        assert r2["retry"] is True and r2.get("step_hint")  # 第二次错:中间步提示
+        assert r2["tier_change"] and r2["tier_change"]["to"] == "basic"  # 连错 2 次降档
+        r3 = client.post("/api/learn/answer", json={
+            "child": CHILD + "x", "session": "sx", "qid": qid, "answer": "99999", "time_s": 2}).json()
+        assert r3["retry"] is False  # 第三次错:过题换新题
+        assert r3.get("next") or r3.get("done")
 
     def test_答错不公布答案给下一步动作(self):
         learn = store.load_learn(CHILD + "y")
