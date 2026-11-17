@@ -333,17 +333,24 @@ async function speak(text, emo) {
 /* ---- 表情引擎(借鉴 Open-LLM-VTuber expression mapping,SVG 轻量版) ---- */
 const EMO_PARTS = {
   normal: { eyes: "eyes", mouth: "mouthN" },
-  happy:  { eyes: "eyesH", mouth: "mouthH" },
+  happy:  { eyes: "eyesH", mouth: "mouthH", img: "assets/emo/cheer.png" },
   shy:    { eyes: "eyes", mouth: "mouthSad", blush: "big" },
   pouty:  { eyes: "eyesP", mouth: "mouthP" },
   sad:    { eyes: "eyesSad", mouth: "mouthSad" },
-  sleepy: { eyes: "eyesSleepy", mouth: "mouthSleepy", zzz: true },
+  sleepy: { eyes: "eyesSleepy", mouth: "mouthSleepy", zzz: true, img: "assets/emo/sleep.png" },
 };
+/* 官方差分立绘（SlimeNull 大肥鱼桌宠 Chubby Whale, Issue #80, CC BY-NC-SA 4.0） */
+const EMO_IMG_DEFAULT = "assets/whale_chan.png";
+const EMO_EXTRA = { eat: "assets/emo/eat.png", walk: "assets/emo/walk.png", idle: "assets/emo/idle.png" };
 const EMO_IDS = ["eyes", "eyesH", "eyesP", "eyesSad", "eyesSleepy",
   "mouthN", "mouthH", "mouthP", "mouthSad", "mouthSleepy"];
 
 function setEmo(name) {
   const cfg = EMO_PARTS[name] || EMO_PARTS.normal;
+  // 全身差分立绘优先（官方桌宠素材），无差分的情绪回落到静态设定图本体
+  const imgSrc = (EMO_PARTS[name] && EMO_PARTS[name].img) || EMO_EXTRA[name] || EMO_IMG_DEFAULT;
+  const img = document.getElementById("whaleImg");
+  if (img && !img.src.endsWith(imgSrc)) img.src = imgSrc;
   EMO_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = "none"; });
   const e = document.getElementById(cfg.eyes), m = document.getElementById(cfg.mouth);
   if (e) e.style.display = "";
