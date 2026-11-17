@@ -293,7 +293,7 @@ async def chat(inp: ChatIn):
     if music:
         reply, pool, idx, emo, song_file, song_title = music
         return {"reply": _adultize(reply, mode), "emo": emo, "pool": pool, "idx": idx,
-                "source": "offline", "song": song_file, "song_title": song_title}
+                "source": "offline", "song": song_file, "song_title": song_title, "song_pending": None}
     # 多轮记忆:系统提示 + 最近 N 轮 + 本句
     history = SESSIONS.setdefault(inp.session_id[:64], collections.deque(maxlen=SESSION_TURNS * 2))
     messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
@@ -490,20 +490,23 @@ async def music_fetch_api(inp: MusicFetchIn):
         if not rel:
             raise HTTPException(503, "下载超时")
     # 4) 入库(ASCII 重命名)+登记歌单;PLAYLIST 缓存同步刷新
-    src = MUSIC_DL_DATA if os.path.isabs(MUSIC_DL_DATA) and os.path.isdir(MUSIC_DL_DATA) else None
+    # 产物定位优先 RelPath(records 精确给出;Name 可能含 𝐇𝐢-𝐑𝐞𝐬 类数学字母,与磁盘文件名不一致)
+    src = None
+    if rel:
+        cand = os.path.join(MUSIC_DL_DATA, rel)
+        if os.path.isfile(cand):
+            src = cand
     if not src:
-        raise HTTPException(503, f"下载产物目录不可达: {MUSIC_DL_DATA}")
-    found = None
-    for f in os.listdir(src):
-        if song["name"][:12] in f:
-            found = os.path.join(src, f)
-            break
-    if not found:
+        for f in os.listdir(MUSIC_DL_DATA):
+            if song["name"][:12] in f:
+                src = os.path.join(MUSIC_DL_DATA, f)
+                break
+    if not src:
         raise HTTPException(503, "下载完成但未找到产物文件")
     group = inp.group if inp.group in PLAYLIST["groups"] else "songs"
     fname = "%s_%02d_%s.m4a" % (group, _next_seq(group), _slugify(song["name"]))
     MUSIC_DIR.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(found, MUSIC_DIR / fname)
+    shutil.copyfile(src, MUSIC_DIR / fname)
     entry = _register_playlist(group, fname, song["name"], song.get("source", "bilibili"))
     PLAYLIST.clear()
     PLAYLIST.update(json.loads((CONFIG / "playlist.json").read_text(encoding="utf-8")))
