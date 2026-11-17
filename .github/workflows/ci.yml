@@ -1,6 +1,7 @@
 # whale-maid CI:与本地同一套闸门(scripts/verify.py)
 # 设计取舍:仓库极小,backend-tests 与 verify 常跑全量(≈1 分钟),不做变更范围门控;
 #           文档闸门永远跑——docs-only 改动同样受 docs/config 闸门约束。
+# runner 钉 ubuntu-24.04:ubuntu-latest(26.04)已不提供 Python 3.9(与家里机器同版本验证)。
 
 name: ci
 
@@ -11,7 +12,7 @@ on:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,7 +22,7 @@ jobs:
         run: python scripts/verify.py
 
   backend-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
