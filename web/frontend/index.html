@@ -206,6 +206,7 @@
       <button class="chipbtn" id="chipPoem">📜 背古诗</button>
       <button class="chipbtn" data-say="我们来玩数学游戏吧">🔢 数学游戏</button>
       <button class="chipbtn" data-say="我们来猜谜语吧">🧩 猜谜语</button>
+      <button class="chipbtn" data-say="我们来玩猜动物游戏">🐾 猜动物</button>
     </div>
     <div id="microw">
       <button id="hush" title="安静一下">🤫</button>
@@ -548,6 +549,12 @@ async function chat(text) {
       bubble(`🧩 ${data.riddle.q}`, 90000);
       setEmo("normal");
       if (!(await playUrl(`/egg-audio/${data.q_audio}.mp3`))) await speak(data.riddle.q, "normal");
+    } else if (data.animal) {
+      // R6 猜动物:开局引子(如有)→ 线索(预生成音频)
+      if (data.pool && data.idx) await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
+      bubble(`🐾 线索${data.animal.clue_no}:${data.animal.clue}`, 90000);
+      setEmo("normal");
+      if (!(await playUrl(`/egg-audio/${data.clue_audio}.mp3`))) await speak(data.animal.clue, "normal");
     } else if (data.hint_text) {
       // 猜谜/游戏提示:先播miss,再给提示
       if (data.pool && data.idx) await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });

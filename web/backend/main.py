@@ -381,6 +381,45 @@ async def chat(inp: ChatIn):
         idx, intro = _pick_idx("riddle_start")
         return _chat_resp("riddle_start", idx, intro,
                           {"riddle": {"id": r["id"], "q": r["q"]}, "q_audio": f"riddle_{r['id']}_q"})
+    # R6 猜动物:线索逐条放送;猜错自动给下一条线索,3 条后揭晓
+    agame = ANIMAL_GAMES.get(sid)
+    if agame:
+        a = _animal_by_id(agame["id"])
+
+        def _clue_resp(clue_no):
+            return _chat_resp(None, None, f"线索{clue_no}:{a['clues'][clue_no - 1]}",
+                              {"animal": {"id": a["id"], "clue_no": clue_no, "clue": a["clues"][clue_no - 1]},
+                               "clue_audio": f"animals_{a['id']}_{clue_no}"})
+
+        if any(k in text for k in ANIMAL_EXIT_KW):
+            ANIMAL_GAMES.pop(sid, None)
+            idx, reveal = _pick_idx("animal_reveal")
+            return _chat_resp("animal_reveal", idx, reveal + f"答案是「{a['name']}」哦~")
+        if any(a in text for a in a["alias"]):
+            ANIMAL_GAMES.pop(sid, None)
+            idx, reply = _pick_idx("animal_right")
+            return _chat_resp("animal_right", idx, reply)
+        if any(k in text for k in ANIMAL_HINT_KW):
+            if agame["clue"] < 3:
+                agame["clue"] += 1
+                return _clue_resp(agame["clue"])
+            ANIMAL_GAMES.pop(sid, None)
+            idx, reveal = _pick_idx("animal_reveal")
+            return _chat_resp("animal_reveal", idx, reveal + f"答案是「{a['name']}」哦~")
+        # 猜错:还有线索就自动放下一条,用完揭晓
+        if agame["clue"] < 3:
+            agame["clue"] += 1
+            return _clue_resp(agame["clue"])
+        ANIMAL_GAMES.pop(sid, None)
+        idx, reveal = _pick_idx("animal_reveal")
+        return _chat_resp("animal_reveal", idx, reveal + f"答案是「{a['name']}」哦~")
+    if "猜动物" in text or "动物游戏" in text:
+        a = random.choice(ANIMALS)
+        ANIMAL_GAMES[sid] = {"id": a["id"], "clue": 1}
+        idx, intro = _pick_idx("animal_start")
+        return _chat_resp("animal_start", idx, intro,
+                          {"animal": {"id": a["id"], "clue_no": 1, "clue": a["clues"][0]},
+                           "clue_audio": f"animals_{a['id']}_1"})
     # 多轮记忆:系统提示 + 最近 N 轮 + 本句
     history = SESSIONS.setdefault(inp.session_id[:64], collections.deque(maxlen=SESSION_TURNS * 2))
     messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
@@ -752,6 +791,17 @@ def _chat_resp(pool, idx, reply, extra=None):
     if extra:
         out.update(extra)
     return out
+
+
+# ---- R6 猜动物(docs/10):3 条线索由难到易逐条放送,猜中/揭晓收尾 ----
+ANIMALS = json.loads((CONFIG / "animals.json").read_text(encoding="utf-8"))["animals"]
+ANIMAL_GAMES = {}  # session_id -> {"id":…, "clue": 当前线索序号 1..3}
+ANIMAL_EXIT_KW = ("不猜", "结束")
+ANIMAL_HINT_KW = ("提示", "下一条", "再来一条", "线索")
+
+
+def _animal_by_id(aid):
+    return next((a for a in ANIMALS if a["id"] == aid), ANIMALS[0])
 
 
 # ---- R2 时间感知问候(docs/10):按时段选问候池,深夜自动转哄睡语气 ----

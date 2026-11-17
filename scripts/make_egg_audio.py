@@ -75,6 +75,12 @@ async def main() -> int:
     if riddles_path.exists():
         for r in json.loads(riddles_path.read_text(encoding="utf-8"))["riddles"]:
             jobs.append((f"riddle_{r['id']}_q", r["q"]))
+    # R6 猜动物:线索逐条预生成 animals_{id}_{clue_no}.mp3
+    animals_path = ROOT / "config" / "animals.json"
+    if animals_path.exists():
+        for a in json.loads(animals_path.read_text(encoding="utf-8"))["animals"]:
+            for n, clue in enumerate(a["clues"], 1):
+                jobs.append((f"animals_{a['id']}_{n}", clue))
 
     failed = []
     for name, text in jobs:

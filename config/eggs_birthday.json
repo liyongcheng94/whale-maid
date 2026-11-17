@@ -34,7 +34,10 @@
     "riddle_start": "happy",
     "riddle_right": "happy",
     "riddle_reveal": "normal",
-    "riddle_miss": "normal"
+    "riddle_miss": "normal",
+    "animal_start": "happy",
+    "animal_right": "happy",
+    "animal_reveal": "normal"
   },
   "triggers": {
     "greeting": [
@@ -156,6 +159,16 @@
     ],
     "riddle_miss": [
       "嗯……不对哦,再想想!"
+    ],
+    "animal_start": [
+      "猜动物游戏开始!我来说线索,你来猜猜我是谁!"
+    ],
+    "animal_right": [
+      "猜对啦!就是它!冉冉姐姐好厉害!",
+      "咕噜噜,被你猜中啦!击掌!"
+    ],
+    "animal_reveal": [
+      "揭晓答案——记住我哦,下次一定猜到!"
     ]
   },
   "keyword_map": {
