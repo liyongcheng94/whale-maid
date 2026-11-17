@@ -416,10 +416,11 @@ async function sayEgg(pool, anim, pre) {
   await speak(p.text, EGGS.emo && EGGS.emo[pool]);
 }
 
-/* ---- 发呆主动搭话(借鉴 MaiBot 主动消息;?idle=毫秒 可调,测试用) ---- */
-const IDLE_MS = Math.max(4000, Number(new URLSearchParams(location.search).get("idle")) || 50000);
+/* ---- 发呆主动搭话:默认关闭(2026-11-17 用户要求不互动不发声);仅 ?idle=毫秒 显式启用 ---- */
+const IDLE_MS = Number(new URLSearchParams(location.search).get("idle")) || 0;  // 默认关闭:不互动不发声(2026-11-17)
 let idleTimer = null;
 function poke() {
+  if (IDLE_MS <= 0) return;
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
     if (isPlaying()) { poke(); return; }
@@ -622,14 +623,20 @@ function gateTick() {
   settingsBtn.style.background = `linear-gradient(90deg,#ffd39e ${p * 100}%, rgba(255,255,255,.16) ${p * 100}%)`;
   if (p >= 1) { endGate(); openDrawer(); }
 }
-function endGate() { clearInterval(gateTimer); gateTimer = null; settingsBtn.style.background = ""; }
+function endGate(cancelled) {
+  clearInterval(gateTimer); gateTimer = null; settingsBtn.style.background = "";
+  // 单击没反应?提示这是防误触长按门
+  const held = Date.now() - gateStart;
+  if (!cancelled && held >= 250 && held < GATE_MS) bubble("长按 ⚙️ 2.5 秒,进入家长设置", 4000);
+}
 let gateStart = 0;
 settingsBtn.addEventListener("pointerdown", e => {
   e.preventDefault();
   gateStart = Date.now();
   gateTimer = setInterval(gateTick, 40);
 });
-["pointerup", "pointerleave", "pointercancel"].forEach(ev => settingsBtn.addEventListener(ev, endGate));
+settingsBtn.addEventListener("pointerup", () => endGate(false));
+["pointerleave", "pointercancel"].forEach(ev => settingsBtn.addEventListener(ev, () => endGate(true)));
 
 /* ---- 设置抽屉 ---- */
 function openDrawer() {
