@@ -203,6 +203,7 @@
       <button class="chipbtn" data-say="生日快乐！">🎂 生日快乐！</button>
       <button class="chipbtn" data-say="唱首歌吧！">🎵 听首歌！</button>
       <button class="chipbtn" data-say="给我讲个故事！">📖 讲故事！</button>
+      <button class="chipbtn" id="chipPoem">📜 背古诗</button>
     </div>
     <div id="microw">
       <button id="hush" title="安静一下">🤫</button>
@@ -541,6 +542,7 @@ async function chat(text) {
       }
     } else if (data.source === "offline" && data.pool && data.idx) {
       await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
+      if (data.poem) await recitePoem(data.poem);  // R3:背古诗语音指令
     } else {
       lastPool = "fallback";
       bubble(data.reply);
@@ -600,6 +602,27 @@ async function starTap(task) {
 }
 document.querySelectorAll(".chipbtn.star").forEach(b =>
   b.addEventListener("click", () => starTap(b.dataset.star)));
+
+/* ---- R3 古诗小课堂:开场→逐句领读(预生成音频)→夸奖 ---- */
+async function recitePoem(poem) {
+  poke();
+  const intro = { text: `跟我一起背《${poem.title}》!作者,${poem.author}。`, idx: 0, pool: `poem_${poem.id}` };
+  bubble(`📖 ${poem.title} · ${poem.author}`);
+  setEmo("happy");
+  if (!(await playUrl(`/egg-audio/poem_${poem.id}_0.mp3`))) await speak(intro.text, "happy");
+  for (let i = 1; i <= poem.lines.length; i++) {
+    bubble(`【${i}/${poem.lines.length}】${poem.lines[i - 1]}`, 5500);
+    if (!(await playUrl(`/egg-audio/poem_${poem.id}_${i}.mp3`))) await speak(poem.lines[i - 1], "happy");
+  }
+  sayEgg("poem_done", null);
+}
+$("chipPoem").addEventListener("click", async () => {
+  poke();
+  try {
+    const r = await fetch("/api/poem/random");
+    recitePoem(await r.json());
+  } catch (_) { bubble("诗本被海浪吹跑啦,再点一次好不好?"); }
+});
 
 /* ---- 文字输入 ---- */
 $("send").addEventListener("click", () => {

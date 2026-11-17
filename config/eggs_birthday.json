@@ -23,7 +23,9 @@
     "greeting_noon": "happy",
     "greeting_afternoon": "happy",
     "greeting_evening": "happy",
-    "greeting_night": "sleepy"
+    "greeting_night": "sleepy",
+    "poem_start": "happy",
+    "poem_done": "happy"
   },
   "triggers": {
     "greeting": [
@@ -107,6 +109,13 @@
     "greeting_night": [
       "夜深啦……冉冉姐姐该睡觉觉了,我唱歌给你听,盖好被子哦。",
       "嘘……都这么晚了。冉冉姐姐闭上眼睛,小鲸灵守着你。"
+    ],
+    "poem_start": [
+      "好呀!小鲸灵的诗本翻开咯~一句一句跟我读!"
+    ],
+    "poem_done": [
+      "背完啦!冉冉姐姐的记性真好,小鲸灵都佩服!",
+      "哇,整首都记住啦!明天再背一首好不好?"
     ]
   },
   "keyword_map": {

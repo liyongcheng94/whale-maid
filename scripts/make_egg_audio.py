@@ -61,6 +61,15 @@ async def main() -> int:
     for pool, lines in data["triggers"].items():
         for i, text in enumerate(lines, 1):
             jobs.append((f"{pool}_{i}", text))
+    # R3 古诗小课堂:poems.json 逐首生成 开场(0)+逐句(1..n)
+    poems_path = ROOT / "config" / "poems.json"
+    if poems_path.exists():
+        poems = json.loads(poems_path.read_text(encoding="utf-8"))["poems"]
+        for poem in poems:
+            intro = f"跟我一起背《{poem['title']}》!作者,{poem['author']}。"
+            jobs.append((f"poem_{poem['id']}_0", intro))
+            for i, line in enumerate(poem["lines"], 1):
+                jobs.append((f"poem_{poem['id']}_{i}", line))
 
     failed = []
     for name, text in jobs:

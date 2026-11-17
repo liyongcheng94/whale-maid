@@ -305,6 +305,13 @@ async def chat(inp: ChatIn):
         return {"reply": _adultize(reply, mode), "emo": emo, "pool": pool, "idx": idx,
                 "source": "offline", "song": song_file, "song_title": song_title, "song_pending": None,
                 "cover": _cover_for(song_file)}
+    # R3 古诗路由前置:背古诗 → 随机一首,前端逐句领读
+    if any(k in text for k in _POEM_KEYWORDS):
+        idx, intro = _pick_idx("poem_start")
+        poem = random.choice(POEMS)
+        return {"reply": intro, "emo": EGGS["emo"].get("poem_start"), "pool": "poem_start",
+                "idx": idx, "source": "offline", "poem": poem, "song": None, "song_title": None,
+                "song_pending": None}
     # 多轮记忆:系统提示 + 最近 N 轮 + 本句
     history = SESSIONS.setdefault(inp.session_id[:64], collections.deque(maxlen=SESSION_TURNS * 2))
     messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
@@ -633,6 +640,16 @@ async def greeting():
     pool, emo = _greeting_pool(time.localtime().tm_hour)
     idx, text = _pick_idx(pool)
     return {"pool": pool, "idx": idx, "text": text, "emo": EGGS["emo"].get(pool, emo)}
+
+
+# ---- R3 古诗小课堂(docs/10):config/poems.json 逐句领读,音频 poem_{id}_{n}.mp3 预生成 ----
+POEMS = json.loads((CONFIG / "poems.json").read_text(encoding="utf-8"))["poems"]
+_POEM_KEYWORDS = ("古诗", "背诗", "读诗", "念诗", "唐诗")
+
+
+@app.get("/api/poem/random")
+async def poem_random():
+    return random.choice(POEMS)
 
 
 # ---- R1 习惯打卡星星系统(docs/10):data/stars.json 持久化,打卡=星星+1 ----
