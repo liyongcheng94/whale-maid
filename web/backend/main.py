@@ -36,7 +36,11 @@ TTS_CACHE = BACKEND / "tts_cache"
 TTS_CACHE.mkdir(exist_ok=True)
 
 EGGS = json.loads((CONFIG / "eggs_birthday.json").read_text(encoding="utf-8"))
-SYSTEM_PROMPT = (CONFIG / "server_prompt.txt").read_text(encoding="utf-8").strip()
+# 双模式人设:child=冉冉姐姐生日版(默认),adult=原版鱼片(docs/03 人设);儿童化调整只影响 child
+SYSTEM_PROMPTS = {
+    "child": (CONFIG / "server_prompt.txt").read_text(encoding="utf-8").strip(),
+    "adult": (CONFIG / "server_prompt_adult.txt").read_text(encoding="utf-8").strip(),
+}
 
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
 DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
@@ -82,6 +86,7 @@ app = FastAPI(title="whale-maid web", version="2.0-birthday")
 class ChatIn(BaseModel):
     text: str
     session_id: str = "toy"
+    mode: str = "child"  # child | adult
 
 
 def _split_emo(reply: str):
@@ -101,6 +106,13 @@ def _pick_idx(trigger: str):
 
 def _pick(trigger: str) -> str:
     return _pick_idx(trigger)[1]
+
+
+def _adultize(reply: str, mode: str) -> str:
+    """大人模式把儿童版称呼换回「鱼片」(台词池单一来源,零重复内容成本)。"""
+    if mode == "adult":
+        return reply.replace("冉冉姐姐", "鱼片")
+    return reply
 
 
 def _offline_reply(text: str):
@@ -127,13 +139,14 @@ async def eggs():
 @app.post("/api/chat")
 async def chat(inp: ChatIn):
     text = inp.text.strip()[:500]
+    mode = inp.mode if inp.mode in SYSTEM_PROMPTS else "child"
     if not text:
         idx, reply = _pick_idx("fallback")
-        return {"reply": reply, "emo": EGGS["emo"].get("fallback"), "pool": "fallback",
+        return {"reply": _adultize(reply, mode), "emo": EGGS["emo"].get("fallback"), "pool": "fallback",
                 "idx": idx, "source": "offline"}
     # 多轮记忆:系统提示 + 最近 N 轮 + 本句
     history = SESSIONS.setdefault(inp.session_id[:64], collections.deque(maxlen=SESSION_TURNS * 2))
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + list(history) + [{"role": "user", "content": text}]
+    messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
 
     reply, emo, pool, idx, source = None, None, None, None, "offline"
     if DEEPSEEK_KEY:
@@ -159,6 +172,7 @@ async def chat(inp: ChatIn):
             print(f"[chat] deepseek 失败,回落离线台词: {e!r}")
     if reply is None:
         reply, pool, idx, emo = _offline_reply(text)
+        reply = _adultize(reply, mode)
 
     # 会话记忆(离线回复也入记忆,LLM 恢复后能接上刚才的话题)
     history.append({"role": "user", "content": text})
@@ -197,6 +211,24 @@ async def tts(text: str = Query(..., max_length=150), emo: str = Query("normal")
 # 预生成彩蛋音频:零延迟下发(assets_audio 由 make_egg_audio.py 产出,CI 环境缺失时跳过挂载,前端自动回落)
 if (PROJECT / "assets_audio" / "mp3").exists():
     app.mount("/egg-audio", StaticFiles(directory=str(PROJECT / "assets_audio" / "mp3")), name="egg-audio")
+
+
+@app.get("/api/history")
+async def history(limit: int = 100):
+    """本地对话日志只读接口(家长查看;文件缺省/损坏时返回空,不抛错)。"""
+    if not CHAT_LOG.exists():
+        return {"items": []}
+    items = []
+    try:
+        lines = CHAT_LOG.read_text(encoding="utf-8").strip().splitlines()
+        for ln in lines[-max(1, min(limit, 500)):]:
+            try:
+                items.append(json.loads(ln))
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return {"items": items}
 
 
 app.mount("/", StaticFiles(directory=FRONTEND, html=True), name="frontend")

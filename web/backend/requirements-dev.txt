@@ -1,2 +1,3 @@
 # 开发/测试依赖(安装: pip install -r requirements-dev.txt;运行依赖见 requirements.txt)
 pytest>=8
+pillow>=10   # 仅 scripts/make_icon.py 生成 PWA 图标用(产物已入库,重生成才需要)

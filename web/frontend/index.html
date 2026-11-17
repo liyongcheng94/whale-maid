@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>小鲸灵 · 冉冉姐姐的小鲸鱼</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e5a8f">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; }
@@ -68,6 +72,31 @@
   @keyframes squash { 0%,100%{transform:scale(1,1)} 40%{transform:scale(1.07,.9)} }
   .hot { cursor:pointer; }
 
+  /* ---- 家长设置抽屉 ---- */
+  #drawer { position:fixed; top:0; right:-340px; width:min(88vw,330px); height:100%;
+    background:rgba(11,61,102,.96); color:#eaf6ff; z-index:80; transition:right .3s ease;
+    padding:16px; overflow-y:auto; backdrop-filter:blur(6px); }
+  #drawer.open { right:0; }
+  #drawerOverlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:70; display:none; }
+  #drawerOverlay.show { display:block; }
+  .dhead { display:flex; justify-content:space-between; align-items:center; }
+  .dhead h3 { font-size:17px; }
+  #drawerClose { background:none; border:none; color:#fff; font-size:20px; cursor:pointer; }
+  .drow { display:flex; align-items:center; gap:10px; margin:14px 0; font-size:15px; }
+  .drow input[type=range] { flex:1; accent-color:#ffd39e; }
+  .drow select { flex:1; background:#0e5a8f; color:#fff; border:none; border-radius:10px; padding:9px; font-size:14px; }
+  .drow .v { min-width:34px; text-align:right; color:#ffd39e; }
+  .dbtn { width:100%; background:#ff7fa0; color:#fff; border:none; border-radius:12px;
+    padding:11px; font-size:15px; cursor:pointer; margin:12px 0; }
+  .dbtn:active { transform:scale(.97); }
+  #drawer h4 { margin:18px 0 8px; font-size:14px; color:#bfe4ff; }
+  #histList { max-height:42vh; overflow-y:auto; font-size:13px;
+    display:flex; flex-direction:column; gap:6px; }
+  #histList .muted { color:#9fc6e8; }
+  .histItem { background:rgba(255,255,255,.08); border-radius:12px; padding:8px 10px;
+    line-height:1.55; word-break:break-all; }
+  .histItem .t { color:#9fc6e8; font-size:11px; margin-bottom:3px; }
+
   /* ---- 底部操作坞 ---- */
   #dock { position:relative; z-index:5; display:flex; flex-direction:column;
     align-items:center; gap:10px; padding:10px 12px calc(14px + env(safe-area-inset-bottom)); }
@@ -102,6 +131,7 @@
 
   <div id="topbar">
     <div id="ctl">
+      <button id="settings" title="家长设置(长按 2.5 秒)">⚙️</button>
       <button id="mute" title="声音开关">🔊</button>
       <button id="fs" title="全屏">⛶</button>
     </div>
@@ -193,13 +223,34 @@
     </div>
   </div>
 
+  <div id="drawerOverlay"></div>
+  <div id="drawer">
+    <div class="dhead"><h3>家长设置</h3><button id="drawerClose">✕</button></div>
+    <label class="drow">音量
+      <input type="range" id="vol" min="0" max="100" value="100">
+      <span class="v" id="volVal">100</span>
+    </label>
+    <label class="drow">模式
+      <select id="mode">
+        <option value="child">儿童模式 · 冉冉姐姐</option>
+        <option value="adult">大人模式 · 鱼片</option>
+      </select>
+    </label>
+    <button id="clearMem" class="dbtn">🧹 清空小鲸灵的记忆</button>
+    <h4>对话记录(最近)</h4>
+    <div id="histList"><div class="muted">—</div></div>
+  </div>
+
 <script>
 "use strict";
 const THINKING = "让我想想……唔,让我再想亿会儿。";
-const SESSION_ID = "toy-" + new Date().toISOString().slice(0, 10); // 记忆按天分段
+let SESSION_ID = localStorage.getItem("wm_sid") || ("toy-" + new Date().toISOString().slice(0, 10));
 const EGGS_URL = "/api/eggs";
 let EGGS = { triggers: { touch_head: ["咕噜噜?"], touch_belly: ["咕噜噜!"], greeting: ["冉冉姐姐好!"], hush: ["好啦好啦……"], idle: ["冉冉姐姐,陪我玩嘛~"], fallback: ["咕噜噜……"] }, emo: {}, keyword_map: {} };
 let curAudio = null, hideTimer = null, rec = null, listening = false, lastPool = "greeting";
+let audioVolume = Number(localStorage.getItem("wm_vol") ?? "1");
+if (Number.isNaN(audioVolume)) audioVolume = 1;
+let chatMode = localStorage.getItem("wm_mode") || "child";
 
 const $ = id => document.getElementById(id);
 const speech = $("speech"), whaleG = $("whaleG"), chip = $("chip");
@@ -278,6 +329,7 @@ async function playUrl(url) {
     const blob = await r.blob();
     stopAudioOnly();
     curAudio = new Audio(URL.createObjectURL(blob));
+    curAudio.volume = audioVolume;
     await curAudio.play();
     return true;
   } catch (e) {
@@ -302,7 +354,7 @@ async function speak(text, emo) {
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = "zh-CN"; u.rate = 1.05;
+      u.lang = "zh-CN"; u.rate = 1.05; u.volume = audioVolume;
       speechSynthesis.speak(u);
     } catch (_) { /* 静默:文字气泡仍在 */ }
   }
@@ -382,7 +434,7 @@ async function chat(text) {
   try {
     const r = await fetch("/api/chat", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, session_id: SESSION_ID })
+      body: JSON.stringify({ text, session_id: SESSION_ID, mode: chatMode })
     });
     const data = await r.json();
     chip.textContent = data.source === "deepseek" ? "🧠 聪明模式" : "⚠️ 台词兜底";
@@ -400,11 +452,20 @@ async function chat(text) {
   }
 }
 
-/* ---- 触摸热区:永远是"要反应"(孩子在玩),停止交给 🤫 ---- */
+/* ---- 触摸热区:永远是"要反应";连摸 5 次触发按摩机彩蛋(2.5s 内) ---- */
+let tapCount = 0, tapTimer = null;
 document.querySelectorAll(".hot").forEach(h => {
   h.addEventListener("pointerdown", e => {
     poke();
     spawnParticles(h.dataset.pool === "touch_head" ? "hearts" : "bubbles", e.clientX, e.clientY);
+    tapCount++;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(() => { tapCount = 0; }, 2500);
+    if (tapCount >= 5) {
+      tapCount = 0;
+      sayEgg("touch_rapid", "squash");
+      return;
+    }
     sayEgg(h.dataset.pool, h.dataset.anim);
   });
 });
@@ -464,6 +525,100 @@ const force = location.search.includes("force");
 if (isBirthday || force) {
   $("banner").style.display = "inline-block";
 }
+
+/* ---- 家长门:长按 ⚙ 2.5s 才进设置(孩子误触进不去) ---- */
+const GATE_MS = 2500;
+let gateTimer = null;
+const settingsBtn = $("settings");
+function gateTick() {
+  const p = Math.min(1, (Date.now() - gateStart) / GATE_MS);
+  settingsBtn.style.background = `linear-gradient(90deg,#ffd39e ${p * 100}%, rgba(255,255,255,.16) ${p * 100}%)`;
+  if (p >= 1) { endGate(); openDrawer(); }
+}
+function endGate() { clearInterval(gateTimer); gateTimer = null; settingsBtn.style.background = ""; }
+let gateStart = 0;
+settingsBtn.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  gateStart = Date.now();
+  gateTimer = setInterval(gateTick, 40);
+});
+["pointerup", "pointerleave", "pointercancel"].forEach(ev => settingsBtn.addEventListener(ev, endGate));
+
+/* ---- 设置抽屉 ---- */
+function openDrawer() {
+  $("drawer").classList.add("open");
+  $("drawerOverlay").classList.add("show");
+  loadHistory();
+}
+function closeDrawer() {
+  $("drawer").classList.remove("open");
+  $("drawerOverlay").classList.remove("show");
+}
+$("drawerClose").addEventListener("click", closeDrawer);
+$("drawerOverlay").addEventListener("click", closeDrawer);
+
+/* 音量 */
+const volSlider = $("vol");
+volSlider.value = Math.round(audioVolume * 100);
+$("volVal").textContent = Math.round(audioVolume * 100);
+volSlider.addEventListener("input", () => {
+  audioVolume = volSlider.value / 100;
+  localStorage.setItem("wm_vol", String(audioVolume));
+  $("volVal").textContent = volSlider.value;
+  if (curAudio) curAudio.volume = audioVolume;
+});
+
+/* 模式:儿童(冉冉姐姐)/ 大人(鱼片) */
+const modeSel = $("mode");
+modeSel.value = chatMode;
+modeSel.addEventListener("change", () => {
+  chatMode = modeSel.value;
+  localStorage.setItem("wm_mode", chatMode);
+  stopAudioOnly();
+  speak(chatMode === "adult" ? "(傲娇)哼,鱼片,想聊什么?" : "(开心)冉冉姐姐回来啦!继续陪我玩!",
+    chatMode === "adult" ? "pouty" : "happy");
+});
+
+/* 清空记忆 */
+$("clearMem").addEventListener("click", () => {
+  SESSION_ID = "toy-" + Date.now();
+  localStorage.setItem("wm_sid", SESSION_ID);
+  closeDrawer();
+  stopAudioOnly();
+  bubble("记忆清空啦!重新认识一下,我是小鲸灵!", 5000);
+});
+
+/* 对话记录(本地 chat_log 只读) */
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+async function loadHistory() {
+  const list = $("histList");
+  list.innerHTML = '<div class="muted">加载中…</div>';
+  try {
+    const r = await fetch("/api/history?limit=60");
+    const { items } = await r.json();
+    if (!items.length) { list.innerHTML = '<div class="muted">还没有对话记录</div>'; return; }
+    list.innerHTML = items.slice().reverse().map(it =>
+      `<div class="histItem"><div class="t">${esc(it.ts)} · ${it.source === "deepseek" ? "🧠" : "💬"}</div>` +
+      `<div>🧒 ${esc(it.user)}</div><div>🐋 ${esc(it.whale)}</div></div>`).join("");
+  } catch (_) { list.innerHTML = '<div class="muted">加载失败</div>'; }
+}
+
+/* ---- 屏幕常亮(生日演示时平板不休眠;浏览器不支持则静默) ---- */
+let wakeLock = null;
+async function keepAwake() {
+  try {
+    if ("wakeLock" in navigator && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    }
+  } catch (_) {}
+}
+document.addEventListener("pointerdown", keepAwake);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") keepAwake();
+});
 
 /* ---- 启动 ---- */
 fetch(EGGS_URL).then(r => r.json()).then(j => { EGGS = j; }).catch(() => {});

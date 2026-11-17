@@ -78,3 +78,9 @@ class TestPersonaSync:
         persona = _load("config/persona.md")
         assert "冉冉姐姐" in persona
         assert "单一来源" in persona
+
+    def test_大人prompt存在且协议同步(self):
+        adult = _load("config/server_prompt_adult.txt")
+        assert "鱼片" in adult and "1~2 句" in adult
+        for tag in VALID_TAGS:
+            assert f"({tag})" in adult, f"大人 prompt 缺表情标记 ({tag})"
