@@ -37,7 +37,9 @@
     "riddle_miss": "normal",
     "animal_start": "happy",
     "animal_right": "happy",
-    "animal_reveal": "normal"
+    "animal_reveal": "normal",
+    "word_start": "happy",
+    "word_done": "happy"
   },
   "triggers": {
     "greeting": [
@@ -169,6 +171,12 @@
     ],
     "animal_reveal": [
       "揭晓答案——记住我哦,下次一定猜到!"
+    ],
+    "word_start": [
+      "英语小课堂开课啦!今天学三个新单词,跟小鲸灵一起读!"
+    ],
+    "word_done": [
+      "今天的单词学完啦!冉冉姐姐好厉害,明天学新的哦!"
     ]
   },
   "keyword_map": {

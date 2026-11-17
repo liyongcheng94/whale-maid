@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "comment": "小鲸灵学园孩子档案(家长端可改名/新增;低龄档案 locked=true 仅显示不开放学习)。",
+  "children": [
+    { "id": "ranran", "name": "冉冉", "age": 10, "grade": 4, "semester": "下", "avatar": "whale", "locked": false },
+    { "id": "baby", "name": "小宝", "age": 1, "grade": 0, "semester": "", "avatar": "fish", "locked": true, "lock_note": "这个档案等宝宝长大再解锁" }
+  ]
+}

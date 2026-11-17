@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小鲸灵学园 · 学习空间</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { min-height:100vh; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:linear-gradient(180deg,#072a4a,#0e5a8f 55%,#1490c8); color:#eaf6ff;
+    padding:16px 14px 90px; font-size:18px; }
+  button { font-family:inherit; }
+  /* 顶栏 */
+  #top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  #who { display:flex; align-items:center; gap:10px; }
+  #who .avatar { width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.16);
+    display:flex; align-items:center; justify-content:center; font-size:24px; }
+  #who .name { font-size:19px; font-weight:bold; }
+  #who .title-chip { font-size:12px; color:#ffd39e; }
+  #topRight { display:flex; align-items:center; gap:8px; }
+  #topRight button { background:rgba(255,255,255,.16); border:none; color:#fff; font-size:17px;
+    width:44px; height:44px; border-radius:12px; cursor:pointer; }
+  .card { background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);
+    border-radius:16px; padding:16px; margin-bottom:14px; }
+  .card h3 { font-size:16px; color:#bfe4ff; margin-bottom:10px; font-weight:normal; }
+  /* 课程地图 */
+  .unit { margin-bottom:12px; }
+  .unit .uname { font-size:17px; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .lvls { display:flex; gap:10px; flex-wrap:wrap; }
+  .lvl { min-width:120px; min-height:56px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.2);
+    border-radius:14px; padding:10px 14px; cursor:pointer; font-size:16px; display:flex;
+    flex-direction:column; justify-content:center; gap:2px; }
+  .lvl .lv-name { font-weight:bold; }
+  .lvl .lv-status { font-size:12px; color:#bfe4ff; }
+  .lvl.done { border-color:#7be3a2; }
+  .lvl.done .lv-status { color:#7be3a2; }
+  .lvl.planned { opacity:.45; cursor:not-allowed; }
+  /* 每日挑战 */
+  #dailyCard .go { min-height:56px; width:100%; border:none; border-radius:14px; font-size:17px;
+    font-weight:bold; background:#ffd39e; color:#5a3b12; cursor:pointer; }
+  #dailyCard .go:disabled { opacity:.5; }
+  /* 答题面板 */
+  #play { display:none; }
+  #qPrompt { font-size:20px; line-height:1.6; margin:12px 0; color:#fff; min-height:64px; }
+  #qTier { font-size:12px; color:#ffd39e; }
+  #answer { width:100%; min-height:56px; font-size:22px; border-radius:14px; border:none;
+    padding:10px 16px; outline:none; background:rgba(255,255,255,.92); color:#123; }
+  #submit { width:100%; min-height:56px; margin-top:12px; border:none; border-radius:14px;
+    font-size:18px; font-weight:bold; background:#0b3d66; color:#fff; cursor:pointer; }
+  #submit:disabled { opacity:.5; }
+  #feedback { min-height:54px; margin-top:10px; font-size:16px; line-height:1.5; }
+  #feedback.ok { color:#7be3a2; }
+  #feedback.no { color:#ffb0b0; }
+  #scaffold { display:none; background:rgba(255,211,158,.15); border-left:4px solid #ffd39e;
+    padding:10px 12px; border-radius:10px; margin-top:8px; font-size:16px; line-height:1.5; }
+  #progress { font-size:13px; color:#bfe4ff; margin-top:6px; }
+  /* 课外馆 */
+  .games { display:flex; gap:10px; flex-wrap:wrap; }
+  .games .g { min-height:56px; flex:1 1 44%; background:rgba(255,255,255,.14); border:none;
+    border-radius:14px; color:#fff; font-size:16px; cursor:pointer; padding:10px; }
+  .games .g:active { transform:scale(.96); }
+  /* 同伴栏 */
+  #companion { position:fixed; left:0; right:0; bottom:0; background:rgba(7,42,74,.95);
+    backdrop-filter:blur(6px); padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    display:flex; gap:12px; align-items:center; z-index:50; }
+  #companion .cav { width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,.14);
+    display:flex; align-items:center; justify-content:center; font-size:28px; flex:none; }
+  #bubble { flex:1; background:#fff; color:#1c3a52; border-radius:14px; padding:10px 14px;
+    font-size:16px; line-height:1.5; min-height:40px; }
+  /* 遮罩(休息/总结) */
+  #overlay { position:fixed; inset:0; background:rgba(4,20,38,.92); z-index:100; display:none;
+    align-items:center; justify-content:center; padding:24px; }
+  #overlay .panel { max-width:520px; width:100%; background:rgba(255,255,255,.1);
+    border-radius:18px; padding:24px; text-align:center; }
+  #overlay h2 { font-size:22px; margin-bottom:14px; }
+  #overlay p { font-size:17px; line-height:1.7; margin-bottom:10px; }
+  #overlay .done-btn { min-height:56px; width:100%; border:none; border-radius:14px;
+    font-size:17px; font-weight:bold; background:#ffd39e; color:#5a3b12; cursor:pointer; margin-top:10px; }
+  .back { background:none; border:none; color:#bfe4ff; font-size:16px; cursor:pointer;
+    padding:8px 0; margin-bottom:6px; }
+</style>
+</head>
+<body>
+  <div id="top">
+    <div id="who">
+      <div class="avatar" id="whoAvatar">🐋</div>
+      <div><div class="name" id="whoName">–</div>
+        <div class="title-chip">🏅 <span id="whoTitle">新手航海员</span> · XP <span id="whoXp">0</span></div></div>
+    </div>
+    <div id="topRight"><button id="muteBtn" title="声音开关">🔊</button></div>
+  </div>
+
+  <div id="home">
+    <div class="card">
+      <h3>学习地图 · 人教版四年级下册</h3>
+      <div id="map"></div>
+    </div>
+    <div class="card" id="dailyCard">
+      <h3>每日挑战 · 3 题 · 奖励双倍</h3>
+      <button class="go" id="dailyGo">开始今天的挑战</button>
+    </div>
+    <div class="card">
+      <h3>课外馆 · 玩中学</h3>
+      <div class="games">
+        <button class="g" data-say="我们来玩数学游戏吧">🔢 速算擂台</button>
+        <button class="g" data-say="我们来背古诗吧">📜 诗词画廊</button>
+        <button class="g" data-say="我们来猜谜语吧">🧩 解谜工坊</button>
+        <button class="g" data-say="我们来玩猜动物游戏">🐾 特性研究所</button>
+        <button class="g" data-say="随便来首歌听">🎵 音乐角</button>
+        <button class="g" data-say="今天天气怎么样">🌤 天气台</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="play">
+    <button class="back" id="quitLevel">← 返回地图(进度已保存)</button>
+    <div class="card">
+      <div><span id="qTier"></span><span id="progress"></span></div>
+      <div id="qPrompt"></div>
+      <input id="answer" inputmode="decimal" autocomplete="off" placeholder="输入你的答案">
+      <button id="submit">提交答案</button>
+      <div id="feedback"></div>
+      <div id="scaffold"></div>
+    </div>
+  </div>
+
+  <div id="companion">
+    <div class="cav">🐋</div>
+    <div id="bubble">选一个关卡,或者看看今天的挑战。</div>
+  </div>
+
+  <div id="overlay"><div class="panel" id="overlayBody"></div></div>
+
+<script>
+"use strict";
+const CHILD = new URLSearchParams(location.search).get("child") || "ranran";
+const $ = id => document.getElementById(id);
+let muted = localStorage.getItem("wm_muted") === "1";
+let curAudio = null, curSession = null, curQid = null, curLevel = null;
+
+function bubble(t, ms = 6000) { $("bubble").textContent = t; clearTimeout(bubble._t); bubble._t = setTimeout(() => $("bubble").textContent = "", ms); }
+function stopAudio() { if (curAudio) { curAudio.pause(); curAudio = null; } try { speechSynthesis.cancel(); } catch (_) {} }
+async function playUrl(url) {
+  if (muted) return true;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return false;
+    const b = await r.blob();
+    stopAudio();
+    curAudio = new Audio(URL.createObjectURL(b));
+    curAudio.volume = Number(localStorage.getItem("wm_vol") ?? "1");
+    await curAudio.play();
+    return true;
+  } catch (e) { return e && e.name === "NotAllowedError"; }
+}
+async function speak(text, emo) {
+  if (muted) return;
+  try {
+    const q = new URLSearchParams({ text });
+    if (emo) q.set("emo", emo);
+    const r = await fetch("/api/tts?" + q.toString());
+    if (!r.ok) throw 0;
+    const b = await r.blob();
+    stopAudio();
+    curAudio = new Audio(URL.createObjectURL(b));
+    await curAudio.play();
+  } catch (_) {
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "zh-CN"; speechSynthesis.speak(u); } catch (_) {}
+  }
+}
+$("muteBtn").textContent = muted ? "🔇" : "🔊";
+$("muteBtn").addEventListener("click", () => {
+  muted = !muted;
+  localStorage.setItem("wm_muted", muted ? "1" : "0");
+  $("muteBtn").textContent = muted ? "🔇" : "🔊";
+  if (muted) stopAudio();
+});
+
+/* 顶栏身份 */
+fetch("/api/profiles").then(r => r.json()).then(({ children }) => {
+  const me = children.find(c => c.id === CHILD);
+  if (me) { $("whoName").textContent = me.name; $("whoAvatar").textContent = me.avatar === "whale" ? "🐋" : "🐟"; }
+}).catch(() => {});
+
+/* 课程地图 */
+async function loadMap() {
+  const m = await (await fetch("/api/learn/map?child=" + encodeURIComponent(CHILD))).json();
+  $("whoTitle").textContent = m.title;
+  $("whoXp").textContent = m.xp;
+  const map = $("map");
+  map.innerHTML = "";
+  m.units.forEach(u => {
+    const div = document.createElement("div");
+    div.className = "unit";
+    div.innerHTML = `<div class="uname">${u.planned ? "🔒" : "📘"} ${u.name}</div>`;
+    const lv = document.createElement("div");
+    lv.className = "lvls";
+    (u.levels || []).forEach(l => {
+      const b = document.createElement("div");
+      b.className = "lvl" + (l.done ? " done" : "");
+      b.innerHTML = `<div class="lv-name">${l.name}</div><div class="lv-status">${l.done ? "已通关 · 最佳连对 " + l.best : l.count + " 题 · 可挑战"}</div>`;
+      b.addEventListener("click", () => startLevel(l.id, l.name));
+      lv.appendChild(b);
+    });
+    if (u.planned) { const p = document.createElement("div"); p.className = "lv-status"; p.textContent = "建设中,后续开放"; lv.appendChild(p); }
+    div.appendChild(lv);
+    map.appendChild(div);
+  });
+  fetch("/api/learn/daily?child=" + encodeURIComponent(CHILD)).then(r => r.json()).then(d => {
+    $("dailyGo").textContent = d.done ? "今天已完成 ✓(明天再来)" : "开始今天的挑战";
+    $("dailyGo").disabled = d.done;
+  }).catch(() => {});
+}
+loadMap();
+
+/* 关卡玩法(自适应) */
+async function startLevel(levelId, levelName) {
+  curLevel = levelId;
+  curSession = "s-" + Date.now();
+  $("home").style.display = "none";
+  $("play").style.display = "block";
+  $("progress").textContent = ` · ${levelName}`;
+  bubble("关卡开始。答错没关系,提示会告诉你下一步往哪想。");
+  await nextQuestion();
+}
+async function nextQuestion() {
+  const q = await (await fetch(`/api/learn/next?child=${encodeURIComponent(CHILD)}&level=${curLevel}&session=${curSession}`)).json();
+  curQid = q.qid;
+  $("qTier").textContent = "难度:" + q.tier_cn;
+  $("qPrompt").textContent = q.prompt;
+  $("answer").value = "";
+  $("feedback").textContent = "";
+  $("feedback").className = "";
+  $("scaffold").style.display = "none";
+  $("submit").disabled = false;
+  updateProgress(q.count, q.total);
+  $("answer").focus();
+}
+function updateProgress(count, total) {
+  $("progress").textContent = $("progress").textContent.replace(/ · \d+\/\d+/, "") + ` · ${count}/${total}`;
+}
+$("submit").addEventListener("click", submitAnswer);
+$("answer").addEventListener("keydown", e => { if (e.key === "Enter") submitAnswer(); });
+async function submitAnswer() {
+  const text = $("answer").value.trim();
+  if (!text) { $("feedback").textContent = "先写上你的答案。"; $("feedback").className = "no"; return; }
+  $("submit").disabled = true;
+  const r = await (await fetch("/api/learn/answer", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ child: CHILD, session: curSession, qid: curQid, answer: text, time_s: 5 })
+  })).json();
+  if (r.correct) {
+    $("feedback").className = "ok";
+    $("feedback").textContent = `答对了 +${r.xp_gain} XP`;
+    $("scaffold").style.display = "none";
+    bubble(["思路稳。", "对,这个关系你吃透了。", "漂亮,继续。"][Math.floor(Math.random() * 3)]);
+    if (r.tier_change) bubble(`难度升到「${r.tier_change.to === "challenge" ? "挑战" : "标准"}」档——你连对了。`);
+    await speak("答对了", "happy");
+  } else {
+    $("feedback").className = "no";
+    $("feedback").textContent = r.retry ? "没对,但差得不远——看提示,换个角度再试一次。" : "这两步先放过,换个题继续走。";
+    $("scaffold").textContent = "💡 " + (r.scaffold || "");
+    $("scaffold").style.display = "block";
+    bubble("提示在下方。先按提示的路径走一步。");
+    await speak("看一下提示,换个角度再试。");
+  }
+  updateProgress(r.count, r.total);
+  if (r.done) { showSummary(r); return; }
+  if (r.retry) { $("submit").disabled = false; $("answer").select(); return; }
+  if (r.next) { curQid = r.next.qid; $("qTier").textContent = "难度:" + r.next.tier_cn; $("qPrompt").textContent = r.next.prompt; $("answer").value = ""; $("feedback").textContent = ""; $("scaffold").style.display = "none"; $("submit").disabled = false; $("answer").focus(); return; }
+  setTimeout(async () => { $("play").style.display = "none"; $("home").style.display = "block"; loadMap(); }, 1400);
+}
+function showSummary(r) {
+  const s = r.summary || {};
+  $("overlay").style.display = "flex";
+  $("overlayBody").innerHTML = `<h2>本关完成 ✓</h2>
+    <p>最佳连对:${s.streak ?? 0}</p>
+    <p>当前称号:${s.title ?? "–"}</p>
+    <p>错过的题已经记进档案,家长端能看到建议。</p>
+    <button class="done-btn" onclick="closeOverlay()">回地图</button>`;
+  $("play").style.display = "none";
+  $("home").style.display = "block";
+  loadMap();
+}
+function closeOverlay() { $("overlay").style.display = "none"; }
+
+/* 每日挑战:逐题真作答(双倍 XP 由后端按 daily 会话计) */
+let dailyState = null;
+$("dailyGo").addEventListener("click", async () => {
+  const d = await (await fetch("/api/learn/daily?child=" + encodeURIComponent(CHILD))).json();
+  if (d.done) return;
+  dailyState = { list: d.questions, i: 0, right: 0, session: "daily-" + Date.now() };
+  showDailyQ();
+});
+function showDailyQ() {
+  const q = dailyState.list[dailyState.i];
+  const ov = $("overlay");
+  ov.style.display = "flex";
+  $("overlayBody").innerHTML = `
+    <h2>每日挑战 ${dailyState.i + 1}/${dailyState.list.length}</h2>
+    <p style="font-size:22px;font-weight:bold">${q.prompt}</p>
+    <input id="dailyAns" inputmode="decimal" autocomplete="off" placeholder="输入答案"
+      style="width:100%;min-height:56px;font-size:20px;border-radius:12px;border:none;padding:10px 16px;margin-top:8px">
+    <button class="done-btn" id="dailySubmit">提交</button>
+    <p id="dailyFb" style="min-height:24px"></p>`;
+  $("dailyAns").focus();
+  $("dailySubmit").addEventListener("click", submitDaily, { once: true });
+  $("dailyAns").addEventListener("keydown", e => { if (e.key === "Enter") $("dailySubmit").click(); });
+}
+async function submitDaily() {
+  const val = $("dailyAns").value.trim();
+  if (!val) return;
+  const q = dailyState.list[dailyState.i];
+  const r = await (await fetch("/api/learn/answer", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ child: CHILD, session: dailyState.session, qid: q.qid, answer: val, time_s: 0 })
+  })).json();
+  if (r.correct) dailyState.right++;
+  $("dailyFb").textContent = r.correct ? "对!+" + r.xp_gain + " XP" : "这题先放过,看结算。";
+  $("dailySubmit").disabled = true;
+  setTimeout(() => {
+    dailyState.i++;
+    if (dailyState.i < dailyState.list.length) showDailyQ();
+    else {
+      $("overlayBody").innerHTML = `<h2>今日挑战完成 ✓</h2>
+        <p>3 题答对 ${dailyState.right} 题,奖励已按双倍记入 XP。</p>
+        <p>明天会有新的 3 题。</p>
+        <button class="done-btn" onclick="closeOverlay();loadMap()">好的</button>`;
+      $("dailyGo").textContent = "今天已完成 ✓(明天再来)";
+      $("dailyGo").disabled = true;
+    }
+  }, 900);
+}
+
+/* 课外馆(走对话路由) */
+async function sayToWhale(text) {
+  pokeOff();
+  const r = await (await fetch("/api/chat", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, session_id: "kid-" + CHILD, mode: "child" })
+  })).json();
+  bubble(r.reply);
+  setEmoSafe(r.emo);
+  await speak(r.reply, r.emo);
+  if (r.song) { bubble("♪ 正在播放《" + (r.song_title || "歌") + "》"); await playUrl("/music-audio/" + r.song); }
+  return r;
+}
+function setEmoSafe(emo) { /* 学园版仅用气泡+语音,不做立绘差分 */ }
+document.querySelectorAll(".games .g").forEach(b =>
+  b.addEventListener("click", () => sayToWhale(b.dataset.say).catch(() => bubble("这条线路被海浪挡了一下,再试一次。"))));
+
+/* 防误触:学园版不需要发呆搭话 */
+function pokeOff() {}
+</script>
+</body>
+</html>

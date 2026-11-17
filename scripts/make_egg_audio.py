@@ -57,37 +57,45 @@ async def main() -> int:
     if not have_ffmpeg:
         print("!! ffmpeg 不在 PATH:只生成 mp3;装好后再跑一次即补 wav(ogg 链需要 ffmpeg)")
 
-    jobs = []  # (name, text)
+    jobs = []  # (name, text, voice 或 None=默认)
     for pool, lines in data["triggers"].items():
         for i, text in enumerate(lines, 1):
-            jobs.append((f"{pool}_{i}", text))
+            jobs.append((f"{pool}_{i}", text, None))
     # R3 古诗小课堂:poems.json 逐首生成 开场(0)+逐句(1..n)
     poems_path = ROOT / "config" / "poems.json"
     if poems_path.exists():
         poems = json.loads(poems_path.read_text(encoding="utf-8"))["poems"]
         for poem in poems:
             intro = f"跟我一起背《{poem['title']}》!作者,{poem['author']}。"
-            jobs.append((f"poem_{poem['id']}_0", intro))
+            jobs.append((f"poem_{poem['id']}_0", intro, None))
             for i, line in enumerate(poem["lines"], 1):
-                jobs.append((f"poem_{poem['id']}_{i}", line))
+                jobs.append((f"poem_{poem['id']}_{i}", line, None))
     # R5 猜谜语:谜面预生成 riddle_{id}_q.mp3
     riddles_path = ROOT / "config" / "riddles.json"
     if riddles_path.exists():
         for r in json.loads(riddles_path.read_text(encoding="utf-8"))["riddles"]:
-            jobs.append((f"riddle_{r['id']}_q", r["q"]))
+            jobs.append((f"riddle_{r['id']}_q", r["q"], None))
     # R6 猜动物:线索逐条预生成 animals_{id}_{clue_no}.mp3
     animals_path = ROOT / "config" / "animals.json"
     if animals_path.exists():
         for a in json.loads(animals_path.read_text(encoding="utf-8"))["animals"]:
             for n, clue in enumerate(a["clues"], 1):
-                jobs.append((f"animals_{a['id']}_{n}", clue))
+                jobs.append((f"animals_{a['id']}_{n}", clue, None))
+
+    # R7 英语单词卡:词/例句用英文童声(AnaNeural),中文释义用默认音色
+    words_path = ROOT / "config" / "words.json"
+    if words_path.exists():
+        for w in json.loads(words_path.read_text(encoding="utf-8"))["words"]:
+            jobs.append((f"word_{w['word']}_en", w['word'], "en-US-AnaNeural"))
+            jobs.append((f"word_{w['word']}_zh", w['zh'], None))
+            jobs.append((f"word_{w['word']}_sent", w['sentence'], "en-US-AnaNeural"))
 
     failed = []
-    for name, text in jobs:
+    for name, text, v in jobs:
         mp3 = MP3_DIR / f"{name}.mp3"
         try:
             if not mp3.exists():
-                await synth(text, args.voice, mp3)
+                await synth(text, v or args.voice, mp3)
             wav_ok = to_wav(mp3, WAV_DIR / f"{name}.wav") if have_ffmpeg else False
             print(f"ok {name:18s} mp3={mp3.stat().st_size:>6d}B" + (" wav ✓" if wav_ok else ""))
         except Exception as e:

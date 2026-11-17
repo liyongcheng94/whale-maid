@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "comment": "英语单词卡(R7):每日按日期随机 3 词;音频三件套 word_{word}_en(en-US-AnaNeural 词)/word_{word}_zh(中文释义)/word_{word}_sent(en 例句),make_egg_audio 扫描本文件预生成。",
+  "words": [
+    { "word": "apple", "zh": "苹果", "sentence": "I like apples." },
+    { "word": "banana", "zh": "香蕉", "sentence": "The banana is yellow." },
+    { "word": "cat", "zh": "小猫", "sentence": "I have a cat." },
+    { "word": "dog", "zh": "小狗", "sentence": "My dog is cute." },
+    { "word": "egg", "zh": "鸡蛋", "sentence": "I eat an egg." },
+    { "word": "fish", "zh": "鱼", "sentence": "Fish can swim." },
+    { "word": "sun", "zh": "太阳", "sentence": "The sun is bright." },
+    { "word": "moon", "zh": "月亮", "sentence": "The moon is up." },
+    { "word": "star", "zh": "星星", "sentence": "Stars are pretty." },
+    { "word": "water", "zh": "水", "sentence": "I drink water." },
+    { "word": "milk", "zh": "牛奶", "sentence": "Milk is white." },
+    { "word": "book", "zh": "书", "sentence": "I read a book." },
+    { "word": "flower", "zh": "花", "sentence": "The flower is red." },
+    { "word": "tree", "zh": "树", "sentence": "The tree is tall." },
+    { "word": "big", "zh": "大", "sentence": "The whale is big." },
+    { "word": "small", "zh": "小", "sentence": "The ant is small." },
+    { "word": "red", "zh": "红色", "sentence": "The apple is red." },
+    { "word": "blue", "zh": "蓝色", "sentence": "The sky is blue." },
+    { "word": "hello", "zh": "你好", "sentence": "Hello, my friend!" },
+    { "word": "whale", "zh": "鲸鱼", "sentence": "I am a whale!" }
+  ]
+}

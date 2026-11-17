@@ -92,6 +92,10 @@ DEEPSEEK_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 
 app = FastAPI(title="whale-maid web", version="2.0-birthday")
 
+# 小鲸灵学园(docs/10 长期陪伴路线 + docs/prd/xueyuan_prd_v1.md):学习路由必须在 catch-all 静态挂载之前注册
+from learn_routes import router as learn_router  # noqa: E402
+app.include_router(learn_router)
+
 
 class ChatIn(BaseModel):
     text: str

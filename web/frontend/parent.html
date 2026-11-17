@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小鲸灵学园 · 家长控制室</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:#f2f6fa; color:#1c3a52; padding:20px; font-size:16px; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  header h1 { font-size:22px; }
+  header .acts button { background:#fff; border:1px solid #d5e2ee; border-radius:10px;
+    padding:9px 14px; cursor:pointer; font-size:14px; color:#1c3a52; margin-left:8px; }
+  .gate { max-width:420px; margin:12vh auto; background:#fff; border-radius:16px; padding:28px;
+    box-shadow:0 6px 24px rgba(28,58,82,.12); text-align:center; }
+  .gate h2 { font-size:20px; margin-bottom:6px; }
+  .gate p { color:#5a7a96; font-size:14px; margin-bottom:16px; line-height:1.6; }
+  .gate input { width:100%; min-height:56px; font-size:22px; letter-spacing:8px; text-align:center;
+    border:1px solid #d5e2ee; border-radius:12px; margin-bottom:12px; }
+  .gate button { width:100%; min-height:52px; border:none; border-radius:12px; font-size:17px;
+    font-weight:bold; background:#0e5a8f; color:#fff; cursor:pointer; }
+  .gate .err { color:#c0392b; font-size:14px; min-height:20px; margin-top:8px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+  .ccard { background:#fff; border-radius:16px; padding:18px; box-shadow:0 4px 16px rgba(28,58,82,.08); }
+  .ccard h2 { font-size:18px; display:flex; justify-content:space-between; align-items:center; }
+  .ccard h2 .t { font-size:13px; background:#eaf4fd; color:#0e5a8f; padding:3px 10px; border-radius:999px; }
+  .ccard .row { display:flex; gap:12px; margin:12px 0; }
+  .ccard .stat { flex:1; background:#f2f6fa; border-radius:12px; padding:10px; text-align:center; }
+  .ccard .stat b { font-size:20px; display:block; }
+  .ccard .stat span { font-size:12px; color:#5a7a96; }
+  .bars { display:flex; gap:5px; align-items:flex-end; height:64px; margin:10px 0; }
+  .bars .b { flex:1; background:#0e5a8f; border-radius:4px 4px 0 0; min-height:3px; position:relative; }
+  .bars .b span { position:absolute; bottom:-20px; left:0; right:0; text-align:center; font-size:10px; color:#5a7a96; }
+  .ccard ul { margin:8px 0 0 18px; font-size:14px; line-height:1.7; }
+  .ccard .desc { font-size:14px; line-height:1.7; color:#38546e; background:#f7fbff;
+    border-radius:10px; padding:10px 12px; margin-top:10px; }
+  .ccard .acts2 { margin-top:10px; display:flex; gap:8px; }
+  .ccard .acts2 button { flex:1; min-height:44px; border:1px solid #d5e2ee; background:#fff;
+    border-radius:10px; cursor:pointer; font-size:14px; }
+  .full { grid-column:1/-1; background:#fff; border-radius:16px; padding:18px;
+    box-shadow:0 4px 16px rgba(28,58,82,.08); }
+  .full h3 { font-size:16px; margin-bottom:10px; }
+  .full li { font-size:14px; line-height:1.8; }
+  .soon { display:flex; gap:12px; flex-wrap:wrap; }
+  .soon .s { flex:1 1 200px; background:#eef3f8; border-radius:12px; padding:14px; font-size:14px; line-height:1.6; }
+  .soon .s b { display:block; margin-bottom:4px; }
+  .tag { display:inline-block; font-size:11px; background:#e2eef8; color:#38678f; border-radius:6px; padding:2px 6px; }
+  .hidden { display:none; }
+  .warn { color:#c0392b; font-size:14px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>小鲸灵学园 · 家长控制室</h1>
+    <div class="acts" id="hdrActs">
+      <button onclick="location.href='/'">回到头像墙</button>
+      <button id="logout">退出家长身份</button>
+    </div>
+  </header>
+
+  <div class="gate" id="pinGate">
+    <h2 id="pinTitle">输入家长 PIN</h2>
+    <p id="pinDesc">孩子端不会显示这个入口;PIN 只保存在家里这台主机上。4~6 位数字。</p>
+    <input id="pin" inputmode="numeric" autocomplete="off" placeholder="••••">
+    <button id="pinGo">解锁</button>
+    <div class="err" id="pinErr"></div>
+  </div>
+
+  <div id="dash" class="hidden">
+    <div class="grid" id="cards"></div>
+    <div class="full">
+      <h3>难度调整记录(AI 为什么调难度)</h3>
+      <ul id="adjFeed"></ul>
+    </div>
+    <div class="full">
+      <h3>陪伴通道 <span class="tag">规划中 · 轮次 46-65</span></h3>
+      <div class="soon">
+        <div class="s"><b>🎧 伴听</b>家长设备上放音乐/播客/白噪音,独立音频通道,不占用孩子端、不打断学习会话。</div>
+        <div class="s"><b>📱 副屏</b>手机/平板变只读副屏:现在在做什么、还剩几步、是否需要介入。局域网直达,不装 App,不做屏幕镜像。</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let token = sessionStorage.getItem("parent_token") || "";
+
+async function boot() {
+  try {
+    const st = await (await fetch("/api/parent/status")).json();
+    if (!st.set) { showGate(true); return; }
+    if (token) {
+      const chk = await fetch("/api/parent/check?token=" + encodeURIComponent(token));
+      if (chk.ok) { showDash(token); return; }
+    }
+    showGate(false);
+  } catch (_) { $("pinErr").textContent = "服务没连上,请确认后端已启动。"; }
+}
+function showGate(setup) {
+  $("pinGate").classList.remove("hidden");
+  $("dash").classList.add("hidden");
+  $("pinTitle").textContent = setup ? "设置家长 PIN(首次)" : "输入家长 PIN";
+  $("pinGo").textContent = setup ? "保存并进入" : "解锁";
+  $("pinGo").dataset.mode = setup ? "setup" : "verify";
+}
+$("pinGo").addEventListener("click", async () => {
+  const pin = $("pin").value.trim();
+  const mode = $("pinGo").dataset.mode;
+  const r = await fetch(`/api/parent/pin/${mode}`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin })
+  });
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    $("pinErr").textContent = d.detail || "出错了,再试一次。";
+    if (r.status === 429) setTimeout(boot, 300);
+    return;
+  }
+  token = (await r.json()).token;
+  sessionStorage.setItem("parent_token", token);
+  showDash(token);
+});
+$("pin").addEventListener("keydown", e => { if (e.key === "Enter") $("pinGo").click(); });
+$("logout").addEventListener("click", () => { sessionStorage.removeItem("parent_token"); location.reload(); });
+
+async function showDash(tok) {
+  $("pinGate").classList.add("hidden");
+  $("dash").classList.remove("hidden");
+  const ov = await (await fetch("/api/parent/overview?token=" + encodeURIComponent(tok))).json();
+  const cards = $("cards");
+  cards.innerHTML = "";
+  ov.cards.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "ccard";
+    if (c.locked) {
+      div.innerHTML = `<h2>${c.name} <span class="t">低龄档案</span></h2>
+        <p style="font-size:14px;color:#5a7a96;margin-top:8px">这个档案还在等宝宝长大,学习内容会按年龄解锁。</p>`;
+    } else {
+      const bars = c.activity_7d.map(a => {
+        const max = Math.max(1, ...c.activity_7d.map(x => x.count));
+        const h = Math.round(12 + (a.count / max) * 52);
+        return `<div class="b" style="height:${h}px"><span>${a.date}</span></div>`;
+      }).join("");
+      div.innerHTML = `<h2>${c.name}(${c.age} 岁)<span class="t">${c.title}</span></h2>
+        <div class="row">
+          <div class="stat"><b>${c.week_minutes}</b><span>本周学习分钟</span></div>
+          <div class="stat"><b>${c.streak_days}</b><span>连续天数</span></div>
+          <div class="stat"><b>${c.week_answers}</b><span>本周作答</span></div>
+          <div class="stat"><b>${c.xp}</b><span>XP</span></div>
+        </div>
+        <div class="bars">${bars}</div>
+        <div class="desc">${c.summary}</div>
+        ${c.pending.length ? `<div class="warn">待处理:${c.pending.join(";")}</div>` : ""}
+        <div class="acts2"><button data-preview="${c.child}">只读预览孩子视图</button>
+          <button disabled>伴听(规划中)</button><button disabled>副屏(规划中)</button></div>`;
+    }
+    cards.appendChild(div);
+  });
+  cards.querySelectorAll("[data-preview]").forEach(b =>
+    b.addEventListener("click", () => preview(b.dataset.preview)));
+  const feed = $("adjFeed");
+  feed.innerHTML = ov.adjust_feed.length
+    ? ov.adjust_feed.map(e => `<li>${e.ts} · ${e.name || ""} · ${e.reason}(难度 ${e.from} → ${e.to})</li>`).join("")
+    : "<li>暂无调整记录——连续答对/答错达到阈值时,这里会写明 AI 调整难度的理由。</li>";
+}
+
+async function preview(child) {
+  const pv = await (await fetch(`/api/parent/preview/${child}?token=` + encodeURIComponent(token))).json();
+  const ov = $("overlay") || document.createElement("div");
+  ov.id = "overlay";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(10,30,50,.6);z-index:99;display:flex;align-items:center;justify-content:center;padding:20px;";
+  ov.innerHTML = `<div style="max-width:560px;width:100%;background:#fff;border-radius:16px;padding:20px;max-height:80vh;overflow:auto">
+    <h3 style="margin-bottom:8px">只读预览:${child} 的学习视图</h3>
+    <ul style="font-size:14px;line-height:1.8">${pv.units.map(u =>
+      `<li>${u.name}:${(u.levels || []).map(l => `${l.name}${l.done ? " ✓" : ""}`).join("、") || "建设中"}</li>`).join("")}</ul>
+    <p style="font-size:13px;color:#5a7a96;margin-top:8px">最近难度调整:${pv.adjust_log.length ? pv.adjust_log.map(e => e.reason).join(";") : "暂无"}</p>
+    <button style="margin-top:12px;min-height:48px;width:100%;border:none;border-radius:10px;background:#0e5a8f;color:#fff;font-size:15px" id="pvClose">关闭预览(家长仍无法在此替孩子作答)</button>`;
+  document.body.appendChild(ov);
+  $("pvClose").addEventListener("click", () => ov.remove());
+}
+boot();
+</script>
+</body>
+</html>
