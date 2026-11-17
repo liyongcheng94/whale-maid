@@ -153,7 +153,55 @@ def _offline_reply(text: str):
 
 @app.get("/api/health")
 async def health():
-    return {"deepseek": bool(DEEPSEEK_KEY), "model": DEEPSEEK_MODEL, "voice": TTS_VOICE}
+    return {"deepseek": bool(DEEPSEEK_KEY), "model": DEEPSEEK_MODEL, "voice": TTS_VOICE,
+            "music_tools": bool(DEEPSEEK_KEY),  # DeepSeek 接入即支持 LLM 调歌(function calling)
+            "songs": _song_catalog()}
+
+
+def _song_catalog():
+    """歌单目录(health 下发 + LLM system prompt 注入,让模型知道能点什么)。"""
+    catalog = {}
+    for gname, g in PLAYLIST["groups"].items():
+        catalog[gname] = [s["title"] for s in g["songs"]]
+    return catalog
+
+
+def _all_songs():
+    return [(gname, s) for gname, g in PLAYLIST["groups"].items() for s in g["songs"]]
+
+
+# DeepSeek function calling:LLM 可主动调 play_music(2026-11-17 对话升级)
+PLAY_MUSIC_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "play_music",
+        "description": "为用户播放歌曲。用户想听歌/想让你唱歌/点具体歌名/要听哈基米或生日歌时调用。曲库:生日快乐歌(birthday);哈基米曼波(hachimi);孤勇者、挖呀挖(songs)。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "歌名或描述,如「孤勇者」「哈基米」「生日歌」;用户没指定就传「随机」",
+                },
+            },
+            "required": [],
+        },
+    },
+}
+
+
+def _resolve_song(query: str):
+    """LLM 的 play_music 参数 → (组名, 歌)。点歌名/别名子串 > 组关键词 > 全曲库随机。"""
+    q = (query or "随机").lower().strip()
+    if q not in ("随机", "random", ""):
+        for gname, s in _all_songs():
+            hay = " ".join([s["title"]] + s.get("alias", []) + [s["file"]]).lower()
+            if q in hay or any(w in q for w in hay.split()):
+                return gname, s
+        for gname, g in PLAYLIST["groups"].items():
+            if any(k.lower() in q for k in g.get("keywords", [])):
+                return gname, random.choice(g["songs"])
+    return random.choice(_all_songs())
 
 
 @app.get("/api/eggs")
@@ -180,22 +228,57 @@ async def chat(inp: ChatIn):
     messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
 
     reply, emo, pool, idx, source = None, None, None, None, "offline"
+    song_file = song_title = None
     if DEEPSEEK_KEY:
         try:
-            async with httpx.AsyncClient(timeout=20) as client:
+            async with httpx.AsyncClient(timeout=30) as client:
+                # 曲库注入 system 尾部:模型知道能点什么歌
+                messages = [dict(messages[0], content=messages[0]["content"] +
+                            "\n曲库(可用 play_music 播放):" +
+                            ";".join(f"{g}:{'/'.join(t)}" for g, t in _song_catalog().items()))] + messages[1:]
                 r = await client.post(
                     DEEPSEEK_URL,
                     headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
                     json={
                         "model": DEEPSEEK_MODEL,
                         "messages": messages,
+                        "tools": [PLAY_MUSIC_TOOL],
                         "max_tokens": 100,
                         "temperature": 0.8,
                     },
                 )
                 r.raise_for_status()
-                raw = (r.json()["choices"][0]["message"]["content"] or "").strip()
-                if raw:
+                msg = r.json()["choices"][0]["message"]
+                # LLM 主动调歌:function calling → 解析歌 → 二次回合让模型说一句引子
+                if msg.get("tool_calls"):
+                    call = msg["tool_calls"][0]
+                    if call["function"]["name"] == "play_music":
+                        try:
+                            args = json.loads(call["function"].get("arguments") or "{}")
+                        except Exception:
+                            args = {}
+                        gname, song = _resolve_song(args.get("query", "随机"))
+                        song_file, song_title = song["file"], song["title"]
+                        follow = messages + [
+                            {"role": "assistant", "content": msg.get("content"), "tool_calls": msg["tool_calls"]},
+                            {"role": "tool", "tool_call_id": call["id"],
+                             "content": f"已找到歌曲《{song_title}》,即将开始播放。请用 1 句话(开头加表情标记)邀请用户欣赏,不要复述歌词。"},
+                        ]
+                        r2 = await client.post(
+                            DEEPSEEK_URL,
+                            headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
+                            json={"model": DEEPSEEK_MODEL, "messages": follow,
+                                  "tool_choice": "none", "max_tokens": 60, "temperature": 0.8},
+                        )
+                        r2.raise_for_status()
+                        raw2 = (r2.json()["choices"][0]["message"]["content"] or "").strip()
+                        if raw2:
+                            body, zh = _split_emo(raw2)
+                            reply = body or f"(开心)♪ 马上为你唱《{song_title}》哦!"
+                            emo = EMO_ZH2EN.get(zh, "happy")
+                            source = "deepseek"
+                elif (msg.get("content") or "").strip():
+                    raw = msg["content"].strip()
                     body, zh = _split_emo(raw)
                     if body:
                         reply, emo, source = body, EMO_ZH2EN.get(zh), "deepseek"
@@ -214,11 +297,12 @@ async def chat(inp: ChatIn):
         with CHAT_LOG.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
                                 "session": inp.session_id[:64], "user": text,
-                                "whale": reply, "source": source}, ensure_ascii=False) + "\n")
+                                "whale": reply, "source": source,
+                                "song": song_title or ""}, ensure_ascii=False) + "\n")
     except Exception:
         pass
     return {"reply": reply, "emo": emo, "pool": pool, "idx": idx, "source": source,
-            "song": None, "song_title": None}
+            "song": song_file, "song_title": song_title}
 
 
 @app.get("/api/tts")

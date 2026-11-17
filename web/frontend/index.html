@@ -415,8 +415,14 @@ function waitAudioDone(timeoutMs) {
   });
 }
 async function playIntroThenSong(pre, file, title) {
-  await sayEgg(pre.pool, null, pre);   // 引子:sing 池预生成音频+表情+气泡
-  await waitAudioDone();               // 引子播完(含 TTS 回落路径)再接歌
+  if (pre.idx && pre.pool) {
+    await sayEgg(pre.pool, null, pre);   // 离线路由:引子用 sing 池预生成音频
+    await waitAudioDone();               // 引子播完(含 TTS 回落路径)再接歌
+  } else {
+    bubble(pre.text);                    // LLM 现编引子(2026-11-17 function calling):直接 TTS
+    setEmo(pre.emo || "happy");
+    await speak(pre.text, pre.emo);
+  }
   bubble("♪ 正在播放《" + title + "》", 8000);
   setEmo("happy");
   animTrigger("wiggle");
@@ -436,7 +442,8 @@ async function chat(text) {
     const data = await r.json();
     chip.textContent = data.source === "deepseek" ? "🧠 聪明模式" : "⚠️ 台词兜底";
     if (data.song) {
-      await playIntroThenSong({ text: data.reply, idx: data.idx, pool: data.pool }, data.song, data.song_title || "");
+      await playIntroThenSong({ text: data.reply, idx: data.idx, pool: data.pool, emo: data.emo },
+        data.song, data.song_title || "");
     } else if (data.source === "offline" && data.pool && data.idx) {
       await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
     } else {

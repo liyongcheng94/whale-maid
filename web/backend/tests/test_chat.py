@@ -249,6 +249,19 @@ def test_离线回复直调口径():
     assert idx == 1 and emo == "pouty"
 
 
+def test_resolve_song点歌口径():
+    """LLM play_music 参数解析:点歌名 > 组关键词 > 随机兜底。"""
+    from main import _resolve_song
+    g, s = _resolve_song("孤勇者")
+    assert g == "songs" and s["file"] == "song_01_guyongzhe.m4a"
+    g, s = _resolve_song("来一首生日快乐歌")
+    assert g == "birthday" and s["title"] == "生日快乐歌"
+    g, s = _resolve_song("随便来个哈基米")
+    assert g == "hachimi"
+    g, s = _resolve_song("随机")
+    assert g in {"birthday", "hachimi", "songs"} and s["file"]
+
+
 def test_pick_idx序号口径():
     """_pick_idx 返回 1-based 序号,对应 {pool}_{idx}.mp3 命名。"""
     idx, text = _pick_idx("greeting")
