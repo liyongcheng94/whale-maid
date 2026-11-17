@@ -205,6 +205,7 @@
       <button class="chipbtn" data-say="给我讲个故事！">📖 讲故事！</button>
       <button class="chipbtn" id="chipPoem">📜 背古诗</button>
       <button class="chipbtn" data-say="我们来玩数学游戏吧">🔢 数学游戏</button>
+      <button class="chipbtn" data-say="我们来猜谜语吧">🧩 猜谜语</button>
     </div>
     <div id="microw">
       <button id="hush" title="安静一下">🤫</button>
@@ -541,6 +542,18 @@ async function chat(text) {
       } catch (e) {
         bubble("呜……捞歌失败了,换一首好不好?", 6000);
       }
+    } else if (data.riddle) {
+      // R5 猜谜语:引子 → 谜面(预生成音频)
+      await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
+      bubble(`🧩 ${data.riddle.q}`, 90000);
+      setEmo("normal");
+      if (!(await playUrl(`/egg-audio/${data.q_audio}.mp3`))) await speak(data.riddle.q, "normal");
+    } else if (data.hint_text) {
+      // 猜谜/游戏提示:先播miss,再给提示
+      if (data.pool && data.idx) await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
+      else { bubble(data.reply); await speak(data.reply, data.emo); }
+      bubble(`💡 ${data.hint_text}`, 12000);
+      await speak(`偷偷告诉你:${data.hint_text}`, "normal");
     } else if (data.math) {
       // R4 数学游戏:先播回复(夸奖/开局),再出题(动态数字走实时 TTS)
       if (data.pool && data.idx) {

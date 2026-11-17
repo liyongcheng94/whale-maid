@@ -30,7 +30,11 @@
     "math_right": "happy",
     "math_done": "happy",
     "math_wrong": "sad",
-    "math_hint": "normal"
+    "math_hint": "normal",
+    "riddle_start": "happy",
+    "riddle_right": "happy",
+    "riddle_reveal": "normal",
+    "riddle_miss": "normal"
   },
   "triggers": {
     "greeting": [
@@ -139,6 +143,19 @@
     ],
     "math_hint": [
       "用数字告诉小鲸灵答案呀~比如「3」!"
+    ],
+    "riddle_start": [
+      "好!猜谜语时间到!听好谜面,大声喊答案!"
+    ],
+    "riddle_right": [
+      "哇!答对啦!冉冉姐姐的小脑瓜太厉害了!",
+      "咕噜噜,这么快就猜中了!给你一颗大星星!"
+    ],
+    "riddle_reveal": [
+      "答案揭晓——现在你知道啦,下次一定猜得中!"
+    ],
+    "riddle_miss": [
+      "嗯……不对哦,再想想!"
     ]
   },
   "keyword_map": {

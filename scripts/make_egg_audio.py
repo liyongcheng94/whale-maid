@@ -70,6 +70,11 @@ async def main() -> int:
             jobs.append((f"poem_{poem['id']}_0", intro))
             for i, line in enumerate(poem["lines"], 1):
                 jobs.append((f"poem_{poem['id']}_{i}", line))
+    # R5 猜谜语:谜面预生成 riddle_{id}_q.mp3
+    riddles_path = ROOT / "config" / "riddles.json"
+    if riddles_path.exists():
+        for r in json.loads(riddles_path.read_text(encoding="utf-8"))["riddles"]:
+            jobs.append((f"riddle_{r['id']}_q", r["q"]))
 
     failed = []
     for name, text in jobs:

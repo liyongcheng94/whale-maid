@@ -349,6 +349,38 @@ async def chat(inp: ChatIn):
         out = _math_reply("math_start")
         out["math"] = {"q": q, "q_tts": qtts}
         return out
+    # R5 猜谜语:进行中所有消息都视为猜答;认输/揭晓/5 次不中给谜底;3 次不中自动提示
+    rgame = RIDDLE_GAMES.get(sid)
+    if rgame:
+        r = _riddle_by_id(rgame["id"])
+        if any(k in text for k in _RIDDLE_EXIT_KW):
+            RIDDLE_GAMES.pop(sid, None)
+            idx, reveal = _pick_idx("riddle_reveal")
+            return _chat_resp("riddle_reveal", idx, reveal + f"谜底是「{r['answer']}」哦~")
+        if any(k in text for k in _RIDDLE_GIVEUP_KW):
+            RIDDLE_GAMES.pop(sid, None)
+            idx, reveal = _pick_idx("riddle_reveal")
+            return _chat_resp("riddle_reveal", idx, reveal + f"谜底是「{r['answer']}」哦~")
+        if any(a in text for a in r["alias"]):
+            RIDDLE_GAMES.pop(sid, None)
+            idx, reply = _pick_idx("riddle_right")
+            return _chat_resp("riddle_right", idx, reply)
+        if "提示" in text:
+            return _chat_resp(None, None, "小鲸灵偷偷告诉你哦~", {"hint_text": r["hint"]})
+        rgame["miss"] += 1
+        if rgame["miss"] >= 5:
+            RIDDLE_GAMES.pop(sid, None)
+            idx, reveal = _pick_idx("riddle_reveal")
+            return _chat_resp("riddle_reveal", idx, reveal + f"谜底是「{r['answer']}」哦~")
+        idx, miss = _pick_idx("riddle_miss")
+        extra = {"hint_text": r["hint"]} if rgame["miss"] >= 3 else None
+        return _chat_resp("riddle_miss", idx, miss, extra)
+    if any(k in text for k in _RIDDLE_START_KW):
+        r = random.choice(RIDDLES)
+        RIDDLE_GAMES[sid] = {"id": r["id"], "miss": 0}
+        idx, intro = _pick_idx("riddle_start")
+        return _chat_resp("riddle_start", idx, intro,
+                          {"riddle": {"id": r["id"], "q": r["q"]}, "q_audio": f"riddle_{r['id']}_q"})
     # 多轮记忆:系统提示 + 最近 N 轮 + 本句
     history = SESSIONS.setdefault(inp.session_id[:64], collections.deque(maxlen=SESSION_TURNS * 2))
     messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
@@ -699,6 +731,27 @@ def _math_reply(pool, math_state=None):
     return {"reply": reply, "emo": EGGS["emo"].get(pool), "pool": pool, "idx": idx,
             "math": math_state, "source": "offline", "song": None, "song_title": None,
             "song_pending": None}
+
+
+# ---- R5 猜谜语(docs/10):alias 判答;3 次不中自动提示,5 次/认输揭晓;谜面预生成 ----
+RIDDLES = json.loads((CONFIG / "riddles.json").read_text(encoding="utf-8"))["riddles"]
+RIDDLE_GAMES = {}  # session_id -> {"id":…, "miss": int}
+_RIDDLE_START_KW = ("猜谜语", "谜语", "出谜语", "猜个谜")
+_RIDDLE_GIVEUP_KW = ("不知道", "猜不出", "揭晓", "认输", "答案是什么")
+_RIDDLE_EXIT_KW = ("不猜", "结束")
+
+
+def _riddle_by_id(rid):
+    return next((r for r in RIDDLES if r["id"] == rid), RIDDLES[0])
+
+
+def _chat_resp(pool, idx, reply, extra=None):
+    """离线响应统一形状(与 chat 返回字段对齐)。"""
+    out = {"reply": reply, "emo": EGGS["emo"].get(pool), "pool": pool, "idx": idx,
+           "source": "offline", "song": None, "song_title": None, "song_pending": None}
+    if extra:
+        out.update(extra)
+    return out
 
 
 # ---- R2 时间感知问候(docs/10):按时段选问候池,深夜自动转哄睡语气 ----
