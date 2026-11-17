@@ -657,15 +657,239 @@
       "id": "u5",
       "name": "三角形",
       "order": 5,
-      "planned": true,
-      "levels": []
+      "levels": [
+        {
+          "id": "m5-1",
+          "name": "认识三角形与三边关系",
+          "topic": "m_triangle",
+          "questions": [
+            {
+              "id": "f11",
+              "tier": "basic",
+              "prompt": "三角形有几条边?",
+              "answer": 3,
+              "scaffold": "数一数围成图形的线段。"
+            },
+            {
+              "id": "f12",
+              "tier": "basic",
+              "prompt": "三角形有几个角?",
+              "answer": 3,
+              "scaffold": "三个角对应三条边。"
+            },
+            {
+              "id": "f13",
+              "tier": "basic",
+              "prompt": "两边之和大于第三边:3cm、4cm、8cm 能围成三角形吗?能填 1,不能填 0。",
+              "answer": 0,
+              "scaffold": "把 3 和 4 加起来,跟 8 比一比。"
+            },
+            {
+              "id": "f14",
+              "tier": "basic",
+              "prompt": "3cm、4cm、5cm 能围成三角形吗?能填 1,不能填 0。",
+              "answer": 1,
+              "scaffold": "较短两边加起来要超过最长边。"
+            },
+            {
+              "id": "f15",
+              "tier": "standard",
+              "prompt": "三角形中,两边之和一定要( )第三边。大于填 1,小于填 2,等于填 3。",
+              "answer": 1,
+              "scaffold": "这是三角形三边关系的核心口诀。"
+            },
+            {
+              "id": "f16",
+              "tier": "standard",
+              "prompt": "两边是 5cm 和 8cm,第三边是整数,最长可以是多少厘米?",
+              "answer": 12,
+              "scaffold": "第三边要比 5+8=13 小——想一想,比 13 小的最大整数是几?"
+            },
+            {
+              "id": "f17",
+              "tier": "standard",
+              "prompt": "两边是 5cm 和 8cm,第三边是整数,最短可以是多少厘米?",
+              "answer": 4,
+              "scaffold": "第三边要大于两边之差 3,整数最小取 4。"
+            },
+            {
+              "id": "f18",
+              "tier": "challenge",
+              "prompt": "等腰三角形两边分别是 5cm 和 8cm,按 5、5、8 围,周长是多少厘米?",
+              "answer": 18,
+              "scaffold": "腰相等:5+5+8。"
+            }
+          ]
+        },
+        {
+          "id": "m5-2",
+          "name": "内角和与分类",
+          "topic": "m_triangle",
+          "questions": [
+            {
+              "id": "f21",
+              "tier": "basic",
+              "prompt": "三角形三个内角的和是多少度?",
+              "answer": 180,
+              "scaffold": "撕下三个角拼一拼,是一条直线。"
+            },
+            {
+              "id": "f22",
+              "tier": "basic",
+              "prompt": "等边三角形每个角是多少度?",
+              "answer": 60,
+              "scaffold": "三个角相等,180÷3。"
+            },
+            {
+              "id": "f23",
+              "tier": "basic",
+              "prompt": "直角三角形里,两个锐角的和是多少度?",
+              "answer": 90,
+              "scaffold": "内角和是 180°。直角已经占掉其中的一半,剩下的两个锐角合起来,就是题目要的那一半。"
+            },
+            {
+              "id": "f24",
+              "tier": "standard",
+              "prompt": "两个角分别是 50° 和 60°,第三个角是多少度?",
+              "answer": 70,
+              "scaffold": "180-50-60。"
+            },
+            {
+              "id": "f25",
+              "tier": "standard",
+              "prompt": "钝角三角形里有几个钝角?",
+              "answer": 1,
+              "scaffold": "如果有两个钝角,内角和就超过 180 了。"
+            },
+            {
+              "id": "f26",
+              "tier": "challenge",
+              "prompt": "两个角相等,第三个角是 60°,每个相等的角是多少度?",
+              "answer": 60,
+              "scaffold": "两个相等的角合起来是 120,每个就是 120 的一半。"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "u6",
       "name": "小数的加法和减法",
       "order": 6,
-      "planned": true,
-      "levels": []
+      "levels": [
+        {
+          "id": "m6-1",
+          "name": "小数加减法(位数相同)",
+          "topic": "m_dec_addsub",
+          "questions": [
+            {
+              "id": "g11",
+              "tier": "basic",
+              "prompt": "0.6+0.2=?",
+              "answer": 0.8,
+              "scaffold": "小数点对齐,再算。"
+            },
+            {
+              "id": "g12",
+              "tier": "basic",
+              "prompt": "1.5-0.3=?",
+              "answer": 1.2,
+              "scaffold": "小数点对齐,再算。"
+            },
+            {
+              "id": "g13",
+              "tier": "basic",
+              "prompt": "0.75+0.25=?",
+              "answer": 1,
+              "scaffold": "小数点对齐,满十进一。"
+            },
+            {
+              "id": "g14",
+              "tier": "standard",
+              "prompt": "3.6+1.4=?",
+              "answer": 5,
+              "scaffold": "小数点对齐,正好凑整。"
+            },
+            {
+              "id": "g15",
+              "tier": "standard",
+              "prompt": "2.5-1.8=?",
+              "answer": 0.7,
+              "scaffold": "小数点对齐,不够减要借位。"
+            },
+            {
+              "id": "g16",
+              "tier": "standard",
+              "prompt": "12.36-1.36=?",
+              "answer": 11,
+              "scaffold": "小数点对齐,直接减。"
+            },
+            {
+              "id": "g17",
+              "tier": "challenge",
+              "prompt": "用简便方法:5.2+3.7+4.8=?",
+              "answer": 13.7,
+              "scaffold": "5.2 和 4.8 先凑 10。"
+            }
+          ]
+        },
+        {
+          "id": "m6-2",
+          "name": "小数加减法(位数不同与验算)",
+          "topic": "m_dec_addsub",
+          "questions": [
+            {
+              "id": "g21",
+              "tier": "basic",
+              "prompt": "1.2+3.45=?",
+              "answer": 4.65,
+              "scaffold": "位数不同:把 1.2 写成 1.20 再对齐。"
+            },
+            {
+              "id": "g22",
+              "tier": "basic",
+              "prompt": "5-0.8=?",
+              "answer": 4.2,
+              "scaffold": "把 5 看成 5.0,再对齐相减。"
+            },
+            {
+              "id": "g23",
+              "tier": "standard",
+              "prompt": "4.7+2.86=?",
+              "answer": 7.56,
+              "scaffold": "4.70+2.86,小数点对齐。"
+            },
+            {
+              "id": "g24",
+              "tier": "standard",
+              "prompt": "10-3.52=?",
+              "answer": 6.48,
+              "scaffold": "10.00-3.52,连续借位。"
+            },
+            {
+              "id": "g25",
+              "tier": "standard",
+              "prompt": "验算:小马虎算 3.8+2.1=5.9,他用 5.9-2.1 验算,应该得多少?",
+              "answer": 3.8,
+              "scaffold": "和-一个加数=另一个加数。"
+            },
+            {
+              "id": "g26",
+              "tier": "challenge",
+              "prompt": "一本笔记本 3.6 元,一支笔 2.75 元,付 10 元应找回多少元?",
+              "answer": 3.65,
+              "scaffold": "先算总价 3.6+2.75,再用 10 减去它。"
+            },
+            {
+              "id": "g27",
+              "tier": "challenge",
+              "prompt": "用简便方法:7.8-2.4-1.6=?",
+              "answer": 3.8,
+              "scaffold": "连续减去两个数,等于减去它们的和 4。"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "u7",
@@ -678,8 +902,99 @@
       "id": "u8",
       "name": "平均数与复式条形统计图",
       "order": 8,
-      "planned": true,
-      "levels": []
+      "levels": [
+        {
+          "id": "m8-1",
+          "name": "平均数",
+          "topic": "m_avg",
+          "questions": [
+            {
+              "id": "h11",
+              "tier": "basic",
+              "prompt": "4 和 8 的平均数是多少?",
+              "answer": 6,
+              "scaffold": "平均数=总和÷个数。"
+            },
+            {
+              "id": "h12",
+              "tier": "basic",
+              "prompt": "3、5、7 的平均数是多少?",
+              "answer": 5,
+              "scaffold": "(3+5+7)÷3。"
+            },
+            {
+              "id": "h13",
+              "tier": "standard",
+              "prompt": "小鲸鱼 3 次投篮分别得 8、9、10 分,平均每次得几分?",
+              "answer": 9,
+              "scaffold": "总分 27÷3。"
+            },
+            {
+              "id": "h14",
+              "tier": "standard",
+              "prompt": "平均数是 6,共 5 个数,总和是多少?",
+              "answer": 30,
+              "scaffold": "平均数×个数=总和。"
+            },
+            {
+              "id": "h15",
+              "tier": "challenge",
+              "prompt": "前 4 次测验平均 88 分,第 5 次考了 92 分,5 次的平均分是多少?",
+              "answer": 89,
+              "scaffold": "先算前 4 次总分 88×4=352,再加 92 除以 5。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u9",
+      "name": "数学广角——鸡兔同笼",
+      "order": 9,
+      "levels": [
+        {
+          "id": "m9-1",
+          "name": "鸡兔同笼(列表与假设)",
+          "topic": "m_jitutonglong",
+          "questions": [
+            {
+              "id": "i11",
+              "tier": "basic",
+              "prompt": "笼子里鸡和兔共 1 只,数腿共 4 条。鸡有几只?(只有 1 只动物,4 条腿是兔)鸡填 0,兔填 1。",
+              "answer": 0,
+              "scaffold": "4 条腿只能是兔。"
+            },
+            {
+              "id": "i12",
+              "tier": "standard",
+              "prompt": "笼子里鸡兔共 4 只,数腿共 12 条。兔有几只?",
+              "answer": 2,
+              "scaffold": "假设全是鸡:4×2=8 条,多出 12-8=4 条,兔=4÷(4-2)。"
+            },
+            {
+              "id": "i13",
+              "tier": "standard",
+              "prompt": "鸡兔共 8 只,数腿 22 条。兔有几只?",
+              "answer": 3,
+              "scaffold": "假设全是鸡:16 条,多 6 条,兔=6÷2。"
+            },
+            {
+              "id": "i14",
+              "tier": "challenge",
+              "prompt": "鸡兔共 10 只,数腿 28 条。鸡有几只?",
+              "answer": 6,
+              "scaffold": "兔=(28-20)÷2=4,鸡=10-4。"
+            },
+            {
+              "id": "i15",
+              "tier": "challenge",
+              "prompt": "全班 12 人租船,大船坐 6 人,小船坐 4 人,共租 2 条船刚好坐满。大船几条?",
+              "answer": 2,
+              "scaffold": "试:1 大 1 小坐 10 人;2 大 0 小坐 12 人。大船填 2。"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
