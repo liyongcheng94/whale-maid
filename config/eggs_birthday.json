@@ -25,7 +25,12 @@
     "greeting_evening": "happy",
     "greeting_night": "sleepy",
     "poem_start": "happy",
-    "poem_done": "happy"
+    "poem_done": "happy",
+    "math_start": "happy",
+    "math_right": "happy",
+    "math_done": "happy",
+    "math_wrong": "sad",
+    "math_hint": "normal"
   },
   "triggers": {
     "greeting": [
@@ -116,6 +121,24 @@
     "poem_done": [
       "背完啦!冉冉姐姐的记性真好,小鲸灵都佩服!",
       "哇,整首都记住啦!明天再背一首好不好?"
+    ],
+    "math_start": [
+      "好呀!数学小游戏开始咯!答对有小星星哦~",
+      "小鲸灵出题啦!听好数字,大声告诉我答案!"
+    ],
+    "math_right": [
+      "答对啦!冉冉姐姐真聪明,咕噜噜!",
+      "哇,这么快就答对了!小鲸灵甘拜下风~"
+    ],
+    "math_wrong": [
+      "呜,差一点点~正确答案我已经悄悄告诉你啦,下一题!",
+      "没关系没关系!数一数手指头,再来一题!"
+    ],
+    "math_done": [
+      "今天的数学游戏结束啦!冉冉姐姐答对了好多,明天再来挑战!"
+    ],
+    "math_hint": [
+      "用数字告诉小鲸灵答案呀~比如「3」!"
     ]
   },
   "keyword_map": {

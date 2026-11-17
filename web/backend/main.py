@@ -312,6 +312,43 @@ async def chat(inp: ChatIn):
         return {"reply": intro, "emo": EGGS["emo"].get("poem_start"), "pool": "poem_start",
                 "idx": idx, "source": "offline", "poem": poem, "song": None, "song_title": None,
                 "song_pending": None}
+    # R4 数学游戏:进行中优先判答(有数字或想退出);否则命中开局词才开新局
+    sid = inp.session_id[:64]
+    game = MATH_GAMES.get(sid)
+    if game and (any(k in text for k in _MATH_EXIT_KW) or _extract_number(text) is not None):
+        if any(k in text for k in _MATH_EXIT_KW):
+            MATH_GAMES.pop(sid, None)
+            return _math_reply("math_done")
+        ans = _extract_number(text)
+        game["count"] += 1
+        correct = ans == game["answer"]
+        final = game["count"] >= MATH_ROUNDS
+        idx, praise = _pick_idx("math_right" if correct else "math_wrong")
+        if not correct:
+            praise += f"(悄悄说:正确答案是 {game['answer']} 呀~)"
+        if final:
+            _, done_line = _pick_idx("math_done")
+            MATH_GAMES.pop(sid, None)
+            out = _math_reply("math_done")
+            out.update({"reply": praise + done_line, "pool": None, "idx": None,
+                        "streak": game["streak"] + (1 if correct else 0), "math": None})
+            return out
+        out = _math_reply("math_right" if correct else "math_done")  # 占位,下面覆写
+        q, qtts, ans2 = _math_q()
+        game["answer"] = ans2
+        out.update({"reply": praise, "pool": "math_right" if correct else None,
+                    "idx": idx if correct else None,
+                    "streak": game["streak"], "math": {"q": q, "q_tts": qtts}})
+        if correct:
+            game["streak"] += 1
+            out["streak"] = game["streak"]
+        return out
+    if any(k in text for k in _MATH_START_KW):
+        q, qtts, ans2 = _math_q()
+        MATH_GAMES[sid] = {"count": 0, "streak": 0, "answer": ans2}
+        out = _math_reply("math_start")
+        out["math"] = {"q": q, "q_tts": qtts}
+        return out
     # 多轮记忆:系统提示 + 最近 N 轮 + 本句
     history = SESSIONS.setdefault(inp.session_id[:64], collections.deque(maxlen=SESSION_TURNS * 2))
     messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
@@ -619,6 +656,49 @@ async def history(limit: int = 100):
     except Exception:
         pass
     return {"items": items}
+
+
+# ---- R4 数学小游戏(docs/10):10 以内加减,会话内连答 5 题;支持中文数字作答 ----
+MATH_GAMES = {}  # session_id -> {"count": 已答, "streak": 连对}
+MATH_ROUNDS = 5
+_MATH_START_KW = ("数学", "算术", "算算", "加法")
+_MATH_EXIT_KW = ("不玩", "结束", "停止", "休息")
+_ZH_NUM = {"零": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+
+
+def _math_q():
+    """生成 10 以内加减题,返回 (算式显示, TTS 读法, 答案)。"""
+    a, b = random.randint(0, 5), random.randint(0, 5)
+    if random.random() < 0.5 or a < b:
+        a, b = max(a, b), min(a, b)
+        if random.random() < 0.5:
+            return f"{a}+{b}", f"{a}加{b}", a + b
+    return f"{a}-{b}", f"{a}减{b}", a - b
+
+
+def _extract_number(text: str):
+    """取第一个阿拉伯数字;否则尝试中文数字(含「十」「X十Y」)。无 → None。"""
+    m = re.search(r"\d+", text)
+    if m:
+        return int(m.group())
+    for zh, val in _ZH_NUM.items():
+        if zh in text:
+            if zh == "十":
+                return 10
+            m2 = re.search(r"([一二三四五六七八九]?)十([一二三四五六七八九]?)", text)
+            if m2:
+                tens = _ZH_NUM.get(m2.group(1), 1) * 10 if m2.group(1) else 10
+                ones = _ZH_NUM.get(m2.group(2), 0) if m2.group(2) else 0
+                return tens + ones
+            return val
+    return None
+
+
+def _math_reply(pool, math_state=None):
+    idx, reply = _pick_idx(pool)
+    return {"reply": reply, "emo": EGGS["emo"].get(pool), "pool": pool, "idx": idx,
+            "math": math_state, "source": "offline", "song": None, "song_title": None,
+            "song_pending": None}
 
 
 # ---- R2 时间感知问候(docs/10):按时段选问候池,深夜自动转哄睡语气 ----

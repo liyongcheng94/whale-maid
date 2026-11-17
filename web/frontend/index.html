@@ -204,6 +204,7 @@
       <button class="chipbtn" data-say="唱首歌吧！">🎵 听首歌！</button>
       <button class="chipbtn" data-say="给我讲个故事！">📖 讲故事！</button>
       <button class="chipbtn" id="chipPoem">📜 背古诗</button>
+      <button class="chipbtn" data-say="我们来玩数学游戏吧">🔢 数学游戏</button>
     </div>
     <div id="microw">
       <button id="hush" title="安静一下">🤫</button>
@@ -539,6 +540,20 @@ async function chat(text) {
         }
       } catch (e) {
         bubble("呜……捞歌失败了,换一首好不好?", 6000);
+      }
+    } else if (data.math) {
+      // R4 数学游戏:先播回复(夸奖/开局),再出题(动态数字走实时 TTS)
+      if (data.pool && data.idx) {
+        await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
+      } else {
+        bubble(data.reply, 9000);
+        setEmo(data.emo);
+        await speak(data.reply, data.emo);
+      }
+      if (data.math && data.math.q_tts) {
+        bubble(`🔢 ${data.math.q} = ?`, 40000);
+        setEmo("normal");
+        await speak(`那,${data.math.q_tts},等于几呀?`, "normal");
       }
     } else if (data.source === "offline" && data.pool && data.idx) {
       await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
