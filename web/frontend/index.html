@@ -196,6 +196,9 @@
 
   <div id="dock">
     <div id="chips">
+      <button class="chipbtn star" data-star="brush">⭐刷牙打卡</button>
+      <button class="chipbtn star" data-star="tidy">🧹收拾打卡</button>
+      <button class="chipbtn star" data-star="sleep">🛏早睡打卡</button>
       <button class="chipbtn util" data-repeat>🔁 再讲一个</button>
       <button class="chipbtn" data-say="生日快乐！">🎂 生日快乐！</button>
       <button class="chipbtn" data-say="唱首歌吧！">🎵 听首歌！</button>
@@ -225,6 +228,9 @@
       </select>
     </label>
     <button id="clearMem" class="dbtn">🧹 清空小鲸灵的记忆</button>
+    <h4>⭐ 打卡星星</h4>
+    <div class="drow"><span>累计</span><span class="v" id="starCount" style="font-size:20px">–</span>
+      <span style="font-size:12px;color:#9fc6e8">刷牙/收拾玩具/早睡打卡攒星星</span></div>
     <h4>对话记录(最近)</h4>
     <div id="histList"><div class="muted">—</div></div>
   </div>
@@ -574,6 +580,27 @@ document.querySelector("[data-repeat]").addEventListener("click", () => {
   sayEgg(lastPool, null);
 });
 
+/* ---- R1 习惯打卡:⭐ +1,夸奖走预生成音频,星星数进家长抽屉 ---- */
+let starTotal = null;
+async function starTap(task) {
+  poke();
+  try {
+    const r = await fetch("/api/stars", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task }) });
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    starTotal = d.total;
+    const starEl = document.getElementById("starCount");
+    if (starEl) starEl.textContent = d.total;
+    if (d.added) spawnParticles("hearts", innerWidth / 2, innerHeight / 2.2);
+    bubble(d.reply);
+    setEmo(d.emo);
+    if (!(await playUrl(`/egg-audio/${d.pool}_${d.idx}.mp3`))) await speak(d.reply, d.emo);
+  } catch (_) { bubble("星星系统打了个盹,再试一次好不好?"); }
+}
+document.querySelectorAll(".chipbtn.star").forEach(b =>
+  b.addEventListener("click", () => starTap(b.dataset.star)));
+
 /* ---- 文字输入 ---- */
 $("send").addEventListener("click", () => {
   const t = $("textbox").value.trim();
@@ -650,6 +677,10 @@ function openDrawer() {
   $("drawer").classList.add("open");
   $("drawerOverlay").classList.add("show");
   loadHistory();
+  fetch("/api/stars").then(r => r.json()).then(d => {
+    const el = document.getElementById("starCount");
+    if (el) el.textContent = d.total;
+  }).catch(() => {});
 }
 function closeDrawer() {
   $("drawer").classList.remove("open");

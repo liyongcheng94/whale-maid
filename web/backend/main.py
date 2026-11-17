@@ -614,4 +614,66 @@ async def history(limit: int = 100):
     return {"items": items}
 
 
+# ---- R1 习惯打卡星星系统(docs/10):data/stars.json 持久化,打卡=星星+1 ----
+STARS_FILE = PROJECT / "data" / "stars.json"
+STAR_TASKS = {"brush": "刷牙", "tidy": "收拾玩具", "sleep": "早睡"}
+_STAR_REPEAT_WINDOW = 60  # 同一任务 60s 内重复打卡不加分
+
+
+def _load_stars() -> dict:
+    try:
+        data = json.loads(STARS_FILE.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and "total" in data:
+            return data
+    except Exception:
+        pass
+    return {"total": 0, "log": [], "first_seen": time.strftime("%Y-%m-%d")}
+
+
+def _save_stars(data: dict) -> None:
+    STARS_FILE.parent.mkdir(exist_ok=True)
+    STARS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@app.get("/api/stars")
+async def stars_get():
+    """星星总览:总数 + 今日打卡数 + 相识首日(R11 成长纪念用)。"""
+    data = _load_stars()
+    today = time.strftime("%Y-%m-%d")
+    return {"total": data.get("total", 0),
+            "today": sum(1 for e in data.get("log", []) if str(e.get("ts", "")).startswith(today)),
+            "first_seen": data.get("first_seen", today),
+            "tasks": STAR_TASKS}
+
+
+class StarIn(BaseModel):
+    task: str
+
+
+@app.post("/api/stars")
+async def stars_post(inp: StarIn):
+    """打卡:task ∈ {brush,tidy,sleep} → 星星+1,返回夸奖台词(池+序号对齐预生成音频)。"""
+    if inp.task not in STAR_TASKS:
+        raise HTTPException(400, f"unknown task: {inp.task}")
+    data = _load_stars()
+    now = time.time()
+    today = time.strftime("%Y-%m-%d")
+    recent = [e for e in data.get("log", [])
+              if e.get("task") == inp.task and now - float(e.get("epoch", 0)) < _STAR_REPEAT_WINDOW]
+    if recent:
+        idx, reply = _pick_idx("star_repeat")
+        return {"total": data.get("total", 0), "added": 0, "task": STAR_TASKS[inp.task],
+                "reply": reply, "emo": EGGS["emo"].get("star_repeat"),
+                "pool": "star_repeat", "idx": idx}
+    idx, praise = _pick_idx("star_praise")
+    data["total"] = data.get("total", 0) + 1
+    data.setdefault("log", []).append({"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                                       "epoch": now, "task": inp.task, "label": STAR_TASKS[inp.task]})
+    data.setdefault("first_seen", today)
+    _save_stars(data)
+    return {"total": data["total"], "added": 1, "task": STAR_TASKS[inp.task],
+            "reply": praise, "emo": EGGS["emo"].get("star_praise"),
+            "pool": "star_praise", "idx": idx}
+
+
 app.mount("/", StaticFiles(directory=FRONTEND, html=True), name="frontend")
