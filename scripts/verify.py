@@ -146,7 +146,7 @@ def gate_web():
     except Exception as e:
         problems.append(f"web/backend/main.py 编译失败: {e!r}")
     html = (ROOT / "web" / "frontend" / "index.html").read_text(encoding="utf-8")
-    for marker in ("/api/chat", "/api/eggs", "setEmo", "whaleSvg", "data-pool=\"touch_head\"", "data-pool=\"touch_belly\""):
+    for marker in ("/api/chat", "/api/eggs", "setEmo", "whaleImg", "whale_chan.png", "data-pool=\"touch_head\"", "data-pool=\"touch_belly\""):
         if marker not in html:
             problems.append(f"index.html 缺关键标记: {marker}")
     return problems

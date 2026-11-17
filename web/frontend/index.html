@@ -56,21 +56,30 @@
   #speech.show { opacity:1; transform:translateY(0) scale(1); }
   #speech::after { content:""; position:absolute; left:50%; bottom:-10px;
     transform:translateX(-50%); border:10px solid transparent; border-top-color:#fff; border-bottom:0; }
-  #whaleSvg { width:min(76vw,380px); height:auto; display:block; }
+  #whaleWrap { width:min(76vw,380px); position:relative; }
+  #whaleImg { width:100%; height:auto; display:block; filter:drop-shadow(0 8px 16px rgba(8,26,70,.35)); }
   #hint { color:#bfe4ff; font-size:14px; opacity:.85; }
 
-  /* ---- 鲸鱼动画 ---- */
-  #whaleG { animation:float 3.2s ease-in-out infinite; transform-origin:160px 150px; }
+  /* ---- 鲸鱼动画（官方立绘版：整体浮动/摇摆/压扁 + 叠加表情） ---- */
+  #whaleG { animation:float 3.2s ease-in-out infinite; transform-origin:50% 62%; }
   @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-  #tail { animation:sway 3.2s ease-in-out infinite; transform-origin:262px 160px; }
-  @keyframes sway { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(9deg)} }
-  #eyes { animation:blink 4.6s infinite; transform-origin:157px 142px; transform-box:view-box; }
-  @keyframes blink { 0%,91%,100%{transform:scaleY(1)} 94%{transform:scaleY(.08)} 97%{transform:scaleY(1)} }
   #whaleG.wiggle { animation:wiggle .7s ease-in-out; }
   @keyframes wiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg) translateY(-10px)} 60%{transform:rotate(4deg)} }
   #whaleG.squash { animation:squash .6s ease-in-out; }
   @keyframes squash { 0%,100%{transform:scale(1,1)} 40%{transform:scale(1.07,.9)} }
-  .hot { cursor:pointer; }
+  /* 表情叠加层：立绘=官方设定图本体，情绪经腮红/瞌睡/动画表达（表情 ID 为契约桩） */
+  #fxLayer { position:absolute; inset:0; pointer-events:none; }
+  .emo-stub { display:none; }
+  #blushN { position:absolute; inset:0; opacity:0; transition:opacity .25s; }
+  #blushN span { position:absolute; width:11%; height:4.5%; border-radius:50%;
+    background:radial-gradient(#F5B8A8, rgba(245,184,168,0)); }
+  #blushN .blushL { left:23%; top:44%; }
+  #blushN .blushR { right:23%; top:44%; }
+  #zzz { position:absolute; top:2%; right:-2%; color:#E8F5FF; font-size:22px; font-weight:bold;
+    text-shadow:0 2px 6px rgba(20,50,110,.4); }
+  .hot { position:absolute; cursor:pointer; pointer-events:auto; }
+  .hot.head { left:18%; top:-2%; width:64%; height:36%; }
+  .hot.belly { left:20%; top:52%; width:60%; height:32%; }
 
   /* ---- 家长设置抽屉 ---- */
   #drawer { position:fixed; top:0; right:-340px; width:min(88vw,330px); height:100%;
@@ -141,67 +150,21 @@
 
   <div id="stage">
     <div id="speech"></div>
-    <svg id="whaleSvg" viewBox="0 0 340 270" aria-label="小鲸灵">
-      <g id="whaleG">
-        <g id="tail">
-          <path d="M258 150 C292 128 318 132 330 118 C322 142 324 152 330 168 C314 158 292 162 262 172 Z" fill="#6cb6ea"/>
-        </g>
-        <ellipse cx="160" cy="155" rx="108" ry="76" fill="#7ec8f7"/>
-        <ellipse cx="158" cy="198" rx="78" ry="42" fill="#cfeaff"/>
-        <path d="M92 202 C114 228 154 230 178 216 C158 242 118 240 88 218 Z" fill="#6cb6ea"/>
-        <path d="M92 100 Q160 48 228 100 L228 84 Q160 34 92 84 Z" fill="#ffffff"/>
-        <circle cx="98" cy="88" r="9" fill="#ffffff"/>
-        <circle cx="126" cy="72" r="9" fill="#ffffff"/>
-        <circle cx="160" cy="66" r="9" fill="#ffffff"/>
-        <circle cx="194" cy="72" r="9" fill="#ffffff"/>
-        <circle cx="222" cy="88" r="9" fill="#ffffff"/>
-        <path d="M70 84 L96 72 L96 92 Z" fill="#ff9eb5"/>
-        <path d="M96 92 L122 84 L104 62 Z" fill="#ffb7c9"/>
-        <circle cx="98" cy="82" r="6" fill="#ff7fa0"/>
-        <g id="eyes">
-          <circle cx="128" cy="142" r="14" fill="#26333f"/>
-          <circle cx="186" cy="142" r="14" fill="#26333f"/>
-          <circle cx="133" cy="137" r="5" fill="#ffffff"/>
-          <circle cx="191" cy="137" r="5" fill="#ffffff"/>
-        </g>
-        <g id="eyesH" style="display:none">
-          <path d="M114 145 Q128 129 142 145" stroke="#26333f" stroke-width="4" fill="none" stroke-linecap="round"/>
-          <path d="M172 145 Q186 129 200 145" stroke="#26333f" stroke-width="4" fill="none" stroke-linecap="round"/>
-        </g>
-        <g id="eyesP" style="display:none">
-          <g transform="translate(157 142) scale(1 .72) translate(-157 -142)">
-            <circle cx="128" cy="142" r="13" fill="#26333f"/>
-            <circle cx="186" cy="142" r="13" fill="#26333f"/>
-            <circle cx="133" cy="138" r="4.5" fill="#ffffff"/>
-            <circle cx="191" cy="138" r="4.5" fill="#ffffff"/>
-          </g>
-        </g>
-        <g id="eyesSad" style="display:none">
-          <g transform="translate(157 148) scale(1 .55) translate(-157 -148)">
-            <circle cx="128" cy="142" r="13" fill="#26333f"/>
-            <circle cx="186" cy="142" r="13" fill="#26333f"/>
-            <circle cx="133" cy="138" r="4.5" fill="#ffffff"/>
-            <circle cx="191" cy="138" r="4.5" fill="#ffffff"/>
-          </g>
-        </g>
-        <g id="eyesSleepy" style="display:none">
-          <path d="M116 145 L140 145" stroke="#26333f" stroke-width="4" stroke-linecap="round"/>
-          <path d="M174 145 L198 145" stroke="#26333f" stroke-width="4" stroke-linecap="round"/>
-        </g>
-        <g id="blushN">
-          <ellipse cx="106" cy="168" rx="12" ry="7" fill="#ff9eb5" opacity=".75"/>
-          <ellipse cx="210" cy="168" rx="12" ry="7" fill="#ff9eb5" opacity=".75"/>
-        </g>
-        <path id="mouthN" d="M148 176 Q160 188 172 176" stroke="#26333f" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-        <path id="mouthH" style="display:none" d="M144 172 Q160 196 176 172" stroke="#26333f" stroke-width="4" fill="none" stroke-linecap="round"/>
-        <path id="mouthP" style="display:none" d="M151 181 Q160 174 169 181" stroke="#26333f" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-        <path id="mouthSad" style="display:none" d="M146 181 q7 -7 14 0 q7 7 14 0" stroke="#26333f" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-        <circle id="mouthSleepy" style="display:none" cx="160" cy="181" r="6" fill="none" stroke="#26333f" stroke-width="3.5"/>
-        <text id="zzz" x="228" y="82" font-size="18" fill="#e8f5ff" font-weight="bold" style="display:none">Zz…</text>
-      </g>
-      <circle class="hot" data-pool="touch_head" data-anim="wiggle" cx="160" cy="76" r="58" fill="transparent"/>
-      <circle class="hot" data-pool="touch_belly" data-anim="squash" cx="160" cy="192" r="54" fill="transparent"/>
-    </svg>
+        <!-- 形象 v3：官方设定图本体抠图（docs/assets/q版设定图_官方.jpg 正面视图），照搬不手绘 -->
+    <div id="whaleWrap">
+      <div id="whaleG">
+        <img id="whaleImg" src="assets/whale_chan.png" alt="小鲸灵 · 大肥鱼">
+        <div id="fxLayer">
+          <!-- 表情契约桩：setEmo 按 ID 切换 display；静态立绘下情绪经 blushN/zzz/动画表达 -->
+          <div id="eyes" class="emo-stub"></div><div id="eyesH" class="emo-stub"></div><div id="eyesP" class="emo-stub"></div><div id="eyesSad" class="emo-stub"></div><div id="eyesSleepy" class="emo-stub"></div>
+          <div id="mouthN" class="emo-stub"></div><div id="mouthH" class="emo-stub"></div><div id="mouthP" class="emo-stub"></div><div id="mouthSad" class="emo-stub"></div><div id="mouthSleepy" class="emo-stub"></div>
+          <div id="blushN"><span class="blushL"></span><span class="blushR"></span></div>
+          <div id="zzz" style="display:none">Zz…</div>
+        </div>
+      </div>
+      <div class="hot head" data-pool="touch_head" data-anim="wiggle"></div>
+      <div class="hot belly" data-pool="touch_belly" data-anim="squash"></div>
+    </div>
     <div id="hint">摸摸我的头和肚肚试试 · 按住 🎤 说话</div>
   </div>
 
