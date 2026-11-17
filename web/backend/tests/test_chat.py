@@ -256,8 +256,10 @@ def test_resolve_song点歌口径():
     assert g == "songs" and s["file"] == "song_01_guyongzhe.m4a"
     g, s = _resolve_song("来一首生日快乐歌")
     assert g == "birthday" and s["title"] == "生日快乐歌"
-    g, s = _resolve_song("随便来个哈基米")
-    assert g == "hachimi"
+    g, s = _resolve_song("哈基米曼波")
+    assert g == "hachimi" and s["file"] == "hachimi_01_hamanbo.m4a"
+    g, s = _resolve_song("稻香")  # 曲库外歌名 → None(前端走 /api/music/fetch 实时捞)
+    assert g is None and s is None
     g, s = _resolve_song("随机")
     assert g in {"birthday", "hachimi", "songs"} and s["file"]
 
