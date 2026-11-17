@@ -140,8 +140,24 @@ async def learn_map(child: str = Query(...)):
             l["best"] = st.get("best")
             l["done"] = bool(st.get("done"))
     return {"child": child, "units": meta, "xp": learn.get("xp", 0),
-            "title": _title_for(learn.get("xp", 0)),
+            "title": _title_for(learn.get("xp", 0)), "badges": _unit_badges(learn),
             "first_seen": learn.get("first_seen")}
+
+
+UNIT_BADGES = {"u1": "四则运算骑士", "u3": "运算律学徒", "u4": "小数探索家"}
+
+
+def _unit_badges(learn: dict):
+    """R9 成长徽章:单元内全部关卡 done 即解锁(只增不消耗)。"""
+    badges = learn.setdefault("badges", [])
+    for u in CURRICULUM["units"]:
+        levels = u.get("levels", [])
+        if not levels or any(not learn.get("levels", {}).get(l["id"], {}).get("done") for l in levels):
+            continue
+        badge = UNIT_BADGES.get(u["id"])
+        if badge and badge not in badges:
+            badges.append(badge)
+    return badges
 
 
 def _title_for(xp: int):
@@ -235,12 +251,19 @@ async def learn_answer(inp: AnswerIn):
         # 关卡完成判定
         if sess["count"] >= limit:
             out["done"] = True
-            if sess.get("daily"):
-                learn.setdefault("daily_done", {})[time.strftime("%Y-%m-%d")] = True
             lv_state = learn.setdefault("levels", {}).setdefault(q["level"], {})
+            first_done = not lv_state.get("done")
             lv_state["done"] = True
             lv_state["best"] = max(lv_state.get("best", 0), sess["streak"])
-            out["summary"] = {"streak": sess["streak"], "results": sess["results"][-MATH_ROUNDS:],
+            # R8: 每日挑战完成 +20;关卡首通 +30;重复通关 +5(只增不消耗)
+            if sess.get("daily"):
+                learn.setdefault("daily_done", {})[time.strftime("%Y-%m-%d")] = True
+                out["xp_bonus"] = 20
+            else:
+                out["xp_bonus"] = 30 if first_done else 5
+            learn["xp"] = learn.get("xp", 0) + out["xp_bonus"]
+            out["badges"] = _unit_badges(learn)
+            out["summary"] = {"streak": sess["streak"], "results": sess["results"][-limit:],
                               "title": _title_for(learn.get("xp", 0))}
         store.save_learn(inp.child, learn)
         return out
@@ -279,6 +302,9 @@ async def learn_answer(inp: AnswerIn):
             out["done"] = True
             if sess.get("daily"):
                 learn.setdefault("daily_done", {})[time.strftime("%Y-%m-%d")] = True
+                out["xp_bonus"] = 20
+            learn["xp"] = learn.get("xp", 0) + out.get("xp_bonus", 0)
+            out["badges"] = _unit_badges(learn)
             out["summary"] = {"streak": sess["streak"], "results": sess["results"][-limit:]}
         else:
             nq = _pick_question(topic_state["tier"], q["topic"], set(sess["seen"]))
