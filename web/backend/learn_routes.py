@@ -414,19 +414,28 @@ async def parent_overview(token: str = Query("")):
         sessions = learn.get("sessions", [])
         week = [s for s in sessions if _within_days(s.get("ts", ""), 7)]
         minutes = round(sum(s.get("time_s", 0) for s in week) / 60, 1)
+        # R16 上周分钟数(8~14 天前),供周对比
+        prev = [s for s in sessions if 7 < _days_ago(s.get("ts", "")) <= 14]
+        prev_minutes = round(sum(s.get("time_s", 0) for s in prev) / 60, 1)
+        # R17 最近一次学习距今天数
+        last_days = min((_days_ago(s.get("ts", "")) for s in sessions), default=999)
         streak = _streak_days({s.get("ts", "")[:10] for s in sessions})
         acc = _topic_accuracy(week)
         strong = [_topic_name(t) for t, (n, a) in acc.items() if n >= 5 and a >= 0.8]
         support = [_topic_name(t) for t, (n, a) in acc.items() if n >= 3 and a < 0.6]
         pending = [f"「{_topic_name(t)}」连续答错,建议陪练" for t, (n, a) in acc.items() if n >= 2 and a < 0.4]
+        # R17 未学提醒:最近一次学习超过 2 天 → 温和提醒家长发起陪伴
+        if last_days >= 2:
+            pending.insert(0, f"最近 {last_days} 天没有学习记录,要不要陪{c.get('name', '孩子')}开一关?")
         cards.append({
             "child": c["id"], "name": c["name"], "age": c["age"], "locked": c.get("locked", False),
             "xp": learn.get("xp", 0), "title": _title_for(learn.get("xp", 0)),
-            "week_minutes": minutes, "streak_days": streak,
-            "week_answers": len(week),
+            "week_minutes": minutes, "prev_week_minutes": prev_minutes,
+            "last_days_ago": last_days if last_days < 999 else None,
+            "streak_days": streak, "week_answers": len(week),
             "activity_7d": _activity_7d(sessions),
             "strong": strong, "support": support, "pending": pending,
-            "summary": _descriptive(c["name"], minutes, streak, strong, support),
+            "summary": _descriptive(c["name"], minutes, prev_minutes, streak, strong, support, pending),
         })
     feed = sorted(learn_all_adjust(), key=lambda e: e.get("ts", ""), reverse=True)[:10]
     return {"cards": cards, "adjust_feed": feed}
@@ -488,10 +497,22 @@ def _topic_accuracy(sessions):
     return {t: (n, c / n) for t, (n, c) in acc.items()}
 
 
-def _descriptive(name, minutes, streak, strong, support):
-    """家长端用描述性语言,而非评分标签(PRD §0.3)。"""
+def _days_ago(ts: str):
+    try:
+        t = time.mktime(time.strptime(ts[:10], "%Y-%m-%d"))
+        return max(0, int((time.time() - t) // 86400))
+    except Exception:
+        return 999
+
+
+def _descriptive(name, minutes, prev_minutes, streak, strong, support, pending):
+    """家长端用描述性语言,而非评分标签(PRD §0.3)。R16 周对比 / R17 未学提醒。"""
     parts = []
-    if minutes >= 15:
+    if prev_minutes > 0 and minutes > 0:
+        delta = minutes - prev_minutes
+        arrow = "比上周多" if delta >= 0 else "比上周少"
+        parts.append(f"这周学了约 {minutes:g} 分钟,{arrow} {abs(delta):g} 分钟")
+    elif minutes >= 15:
         parts.append(f"这周学了约 {minutes:g} 分钟")
     elif minutes > 0:
         parts.append(f"这周只学了 {minutes:g} 分钟,节奏还比较松")
@@ -501,6 +522,8 @@ def _descriptive(name, minutes, streak, strong, support):
         parts.append("在「" + "」「".join(strong[:2]) + "」上稳住了")
     if support:
         parts.append("「" + "」「".join(support[:2]) + "」可以下周陪练一下")
+    if pending:
+        parts.append("有一两个知识点需要陪练")
     if not parts:
         return f"{name}还没有开始学习记录,可以先从第一关逛起。"
     return f"{name}:{';'.join(parts)}。"
