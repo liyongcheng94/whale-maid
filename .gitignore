@@ -10,3 +10,4 @@ __pycache__/
 *.pyc
 *3mf
 *3mf:Zone.Identifier
+tools/
