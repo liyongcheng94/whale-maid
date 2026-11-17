@@ -234,10 +234,11 @@ async def chat(inp: ChatIn):
     if DEEPSEEK_KEY:
         try:
             async with httpx.AsyncClient(timeout=30) as client:
-                # 曲库注入 system 尾部:模型知道能点什么歌
+                # 曲库注入 system 尾部:模型知道能点什么歌;唱歌必须走工具,不许口头假装唱
                 messages = [dict(messages[0], content=messages[0]["content"] +
                             "\n曲库(可用 play_music 播放):" +
-                            ";".join(f"{g}:{'/'.join(t)}" for g, t in _song_catalog().items()))] + messages[1:]
+                            ";".join(f"{g}:{'/'.join(t)}" for g, t in _song_catalog().items()) +
+                            "\n重要:只要你提到唱歌/献唱/表演歌曲/播放音乐,就必须调用 play_music 工具,绝不要口头假装唱完。用户没指定歌名就传「随机」。")] + messages[1:]
                 r = await client.post(
                     DEEPSEEK_URL,
                     headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
