@@ -3,22 +3,76 @@
   "comment": "歌单机器单一来源：web 离线路由 + 固件 play_music 同步清单。file 对齐 assets_audio/music/（全 ASCII 小写下划线），中文歌名只在 title/alias。组顺序即路由优先级（birthday > hachimi > songs）。来源与许可见 docs/08_音乐来源登记.md。",
   "groups": {
     "birthday": {
-      "keywords": ["生日歌", "生日快乐歌"],
+      "keywords": [
+        "生日歌",
+        "生日快乐歌"
+      ],
       "songs": [
-        {"file": "birthday_01_happy_birthday.m4a", "title": "生日快乐歌", "alias": ["生日歌", "生日快乐歌"], "source": "bilibili"}
+        {
+          "file": "birthday_01_happy_birthday.m4a",
+          "title": "生日快乐歌",
+          "alias": [
+            "生日歌",
+            "生日快乐歌"
+          ],
+          "source": "bilibili"
+        }
       ]
     },
     "hachimi": {
-      "keywords": ["哈基米", "哈吉米", "基米"],
+      "keywords": [
+        "哈基米",
+        "哈吉米",
+        "基米"
+      ],
       "songs": [
-        {"file": "hachimi_01_hamanbo.m4a", "title": "哈基米曼波", "alias": ["哈基米曼波", "哈曼波", "曼波"], "source": "bilibili"}
+        {
+          "file": "hachimi_01_hamanbo.m4a",
+          "title": "哈基米曼波",
+          "alias": [
+            "哈基米曼波",
+            "哈曼波",
+            "曼波"
+          ],
+          "source": "bilibili"
+        }
       ]
     },
     "songs": {
-      "keywords": ["听歌", "唱歌", "音乐", "来首歌", "唱", "歌"],
+      "keywords": [
+        "听歌",
+        "唱歌",
+        "音乐",
+        "来首歌",
+        "唱",
+        "歌"
+      ],
       "songs": [
-        {"file": "song_01_guyongzhe.m4a", "title": "孤勇者", "alias": ["孤勇者"], "artist": "祖娅纳惜", "source": "bilibili"},
-        {"file": "song_02_wayawa.m4a", "title": "挖呀挖", "alias": ["挖呀挖"], "source": "bilibili"}
+        {
+          "file": "song_01_guyongzhe.m4a",
+          "title": "孤勇者",
+          "alias": [
+            "孤勇者"
+          ],
+          "artist": "祖娅纳惜",
+          "source": "bilibili"
+        },
+        {
+          "file": "song_02_wayawa.m4a",
+          "title": "挖呀挖",
+          "alias": [
+            "挖呀挖"
+          ],
+          "source": "bilibili"
+        },
+        {
+          "file": "songs_01_track.m4a",
+          "title": "“回到最初的美好吧~”—《稻香》",
+          "alias": [
+            "“回到最初的美好吧~”—"
+          ],
+          "source": "bilibili"
+        }
       ]
     }
   }

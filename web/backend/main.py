@@ -307,7 +307,8 @@ async def chat(inp: ChatIn):
                 messages = [dict(messages[0], content=messages[0]["content"] +
                             "\n曲库(可用 play_music 播放):" +
                             ";".join(f"{g}:{'/'.join(t)}" for g, t in _song_catalog().items()) +
-                            "\n重要:只要你提到唱歌/献唱/表演歌曲/播放音乐,就必须调用 play_music 工具,绝不要口头假装唱完。用户没指定歌名就传「随机」。"
+                            "\n重要:用户点播/想听/提到任何歌曲(包括曲库里没有的歌)都必须调用 play_music,"
+                            "把歌名作为 query 传入——曲库没有时系统会自动去搜,绝不要口头拒绝或假装唱完。用户没指定歌名就传「随机」。"
                             + f"\n用户所在城市:{DEFAULT_CITY}(用户问天气且没说城市时,直接用它)。"
                             + "\n天气信息只能来自 get_weather 工具,绝不要凭空编造天气。")] + messages[1:]
                 r = await client.post(
