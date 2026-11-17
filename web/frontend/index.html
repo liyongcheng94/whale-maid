@@ -443,7 +443,11 @@ function showPlayerFor(songFile, title, cover) {
       lrcLines = [...text.matchAll(/\[(\d+):(\d+)(?:[.:](\d+))?\]\s*([^\n]+)/g)]
         .map(m => ({ t: (+m[1]) * 60 + (+m[2]) + (m[3] ? +(("0." + m[3])) : 0), line: m[4].trim() }))
         .filter(x => x.line);
-      if (!lrcLines.length) { playerPanel.style.display = "block"; return; }  // 无词也显示封面卡
+      if (!lrcLines.length) {
+        lrcPanel.innerHTML = '<div class="lrc-line on">♪ 暂无歌词</div>';
+        playerPanel.style.display = "block";
+        return;
+      }  // 无词也显示封面卡+占位
       lrcPanel.innerHTML = lrcLines.map(() => '<div class="lrc-line"></div>').join("");
       const els = lrcPanel.querySelectorAll(".lrc-line");
       playerPanel.style.display = "block";
@@ -458,7 +462,10 @@ function showPlayerFor(songFile, title, cover) {
       };
       lrcTimer = setInterval(sync, 300);
       sync();
-    }).catch(() => { playerPanel.style.display = "block"; });
+    }).catch(() => {
+      lrcPanel.innerHTML = '<div class="lrc-line on">♪ 暂无歌词</div>';
+      playerPanel.style.display = "block";
+    });
 }
 
 /* ---- 歌单播放:引子(sing 池预生成音频)→ 接力播真实歌曲(2026-11-17 唱歌升级) ---- */

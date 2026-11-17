@@ -163,6 +163,15 @@ async def health():
             "songs": _song_catalog()}
 
 
+def _cover_for(fname):
+    """本地曲库歌曲的封面(点播时已存 covers/{basename}.jpg;无则 None)。"""
+    if fname:
+        c = COVERS_DIR / (os.path.splitext(fname)[0] + ".jpg")
+        if c.exists():
+            return c.name
+    return None
+
+
 def _song_catalog():
     """歌单目录(health 下发 + LLM system prompt 注入,让模型知道能点什么)。"""
     catalog = {}
@@ -294,7 +303,8 @@ async def chat(inp: ChatIn):
     if music:
         reply, pool, idx, emo, song_file, song_title = music
         return {"reply": _adultize(reply, mode), "emo": emo, "pool": pool, "idx": idx,
-                "source": "offline", "song": song_file, "song_title": song_title, "song_pending": None}
+                "source": "offline", "song": song_file, "song_title": song_title, "song_pending": None,
+                "cover": _cover_for(song_file)}
     # 多轮记忆:系统提示 + 最近 N 轮 + 本句
     history = SESSIONS.setdefault(inp.session_id[:64], collections.deque(maxlen=SESSION_TURNS * 2))
     messages = [{"role": "system", "content": SYSTEM_PROMPTS[mode]}] + list(history) + [{"role": "user", "content": text}]
@@ -396,7 +406,8 @@ async def chat(inp: ChatIn):
     except Exception:
         pass
     return {"reply": reply, "emo": emo, "pool": pool, "idx": idx, "source": source,
-            "song": song_file, "song_title": song_title, "song_pending": song_pending}
+            "song": song_file, "song_title": song_title, "song_pending": song_pending,
+            "cover": _cover_for(song_file)}
 
 
 # ---- 按需找歌(2026-11-17 点播任意歌):go-music-dl web 服务实时搜索下载入库 ----
