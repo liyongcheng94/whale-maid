@@ -206,6 +206,74 @@ def _resolve_song(query: str):
     return random.choice(_all_songs())
 
 
+# ---- 天气工具(Open-Meteo 免费无 key;2026-11-17 用户实测发现小鲸灵答不了天气) ----
+# 用户城市默认值可在 web/backend/.env 配 WHALE_CITY=城市名
+DEFAULT_CITY = os.environ.get("WHALE_CITY", "上海")
+
+GET_WEATHER_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "get_weather",
+        "description": "查询指定城市当前天气(温度/天气现象/湿度/风速+今日温度范围)。用户问天气、冷不冷、要不要带伞等时调用。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "description": "城市名(中文或拼音),如「上海」「深圳」;用户没说城市时传默认城市即可",
+                },
+            },
+            "required": ["city"],
+        },
+    },
+}
+
+WEATHER_CODES = {  # WMO weather code → 中文
+    0: "晴", 1: "大致晴朗", 2: "局部多云", 3: "阴",
+    45: "有雾", 48: "雾凇",
+    51: "毛毛雨", 53: "毛毛雨", 55: "浓毛毛雨",
+    56: "冻毛毛雨", 57: "浓冻毛毛雨",
+    61: "小雨", 63: "中雨", 65: "大雨",
+    66: "冻雨", 67: "大冻雨",
+    71: "小雪", 73: "中雪", 75: "大雪", 77: "雪粒",
+    80: "阵雨", 81: "中阵雨", 82: "强阵雨",
+    85: "小阵雪", 86: "大阵雪",
+    95: "雷阵雨", 96: "雷阵雨伴冰雹", 99: "强雷阵雨伴冰雹",
+}
+
+
+def _weather_code_text(code) -> str:
+    return WEATHER_CODES.get(int(code or 0), "未知天象")
+
+
+async def _fetch_weather(city: str) -> str:
+    """Open-Meteo 地理编码+当前天气,返回给 LLM 的工具结果文本(失败抛异常由调用方兜底)。"""
+    import json as _json
+    async with httpx.AsyncClient(timeout=10) as client:
+        g = await client.get(
+            "https://geocoding-api.open-meteo.com/v1/search",
+            params={"name": city, "count": 1, "language": "zh", "format": "json"})
+        g.raise_for_status()
+        hits = (g.json().get("results") or [])
+        if not hits:
+            return f"ERROR: 找不到城市「{city}」,请请用户确认城市名。"
+        loc = hits[0]
+        r = await client.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={"latitude": loc["latitude"], "longitude": loc["longitude"],
+                    "current": "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
+                    "daily": "temperature_2m_max,temperature_2m_min", "forecast_days": 1,
+                    "timezone": "auto"})
+        r.raise_for_status()
+        d = _json.loads(r.text)
+        cur, daily = d.get("current", {}), d.get("daily", {})
+        return (f"{loc.get('name', city)}当前天气: {cur.get('temperature_2m')}°C "
+                f"{_weather_code_text(cur.get('weather_code'))}, "
+                f"湿度 {cur.get('relative_humidity_2m')}%, "
+                f"风速 {cur.get('wind_speed_10m')}km/h, "
+                f"今日 {daily.get('temperature_2m_min', [''])[0]}~{daily.get('temperature_2m_max', [''])[0]}°C")
+
+
 @app.get("/api/eggs")
 async def eggs():
     return EGGS
@@ -234,18 +302,20 @@ async def chat(inp: ChatIn):
     if DEEPSEEK_KEY:
         try:
             async with httpx.AsyncClient(timeout=30) as client:
-                # 曲库注入 system 尾部:模型知道能点什么歌;唱歌必须走工具,不许口头假装唱
+                # 曲库+城市注入 system 尾部:模型知道能点什么歌、用户在哪;唱歌必须走工具,不许口头假装唱
                 messages = [dict(messages[0], content=messages[0]["content"] +
                             "\n曲库(可用 play_music 播放):" +
                             ";".join(f"{g}:{'/'.join(t)}" for g, t in _song_catalog().items()) +
-                            "\n重要:只要你提到唱歌/献唱/表演歌曲/播放音乐,就必须调用 play_music 工具,绝不要口头假装唱完。用户没指定歌名就传「随机」。")] + messages[1:]
+                            "\n重要:只要你提到唱歌/献唱/表演歌曲/播放音乐,就必须调用 play_music 工具,绝不要口头假装唱完。用户没指定歌名就传「随机」。"
+                            + f"\n用户所在城市:{DEFAULT_CITY}(用户问天气且没说城市时,直接用它)。"
+                            + "\n天气信息只能来自 get_weather 工具,绝不要凭空编造天气。")] + messages[1:]
                 r = await client.post(
                     DEEPSEEK_URL,
                     headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
                     json={
                         "model": DEEPSEEK_MODEL,
                         "messages": messages,
-                        "tools": [PLAY_MUSIC_TOOL],
+                        "tools": [PLAY_MUSIC_TOOL, GET_WEATHER_TOOL],
                         "thinking": DEEPSEEK_THINKING,
                         "max_tokens": 100,
                         "temperature": 0.8,
@@ -256,32 +326,41 @@ async def chat(inp: ChatIn):
                 # LLM 主动调歌:function calling → 解析歌 → 二次回合让模型说一句引子
                 if msg.get("tool_calls"):
                     call = msg["tool_calls"][0]
-                    if call["function"]["name"] == "play_music":
-                        try:
-                            args = json.loads(call["function"].get("arguments") or "{}")
-                        except Exception:
-                            args = {}
+                    fname = call["function"]["name"]
+                    try:
+                        args = json.loads(call["function"].get("arguments") or "{}")
+                    except Exception:
+                        args = {}
+                    if fname == "play_music":
                         gname, song = _resolve_song(args.get("query", "随机"))
                         song_file, song_title = song["file"], song["title"]
-                        follow = messages + [
-                            {"role": "assistant", "content": msg.get("content"), "tool_calls": msg["tool_calls"]},
-                            {"role": "tool", "tool_call_id": call["id"],
-                             "content": f"已找到歌曲《{song_title}》,即将开始播放。请用 1 句话(开头加表情标记)邀请用户欣赏,不要复述歌词。"},
-                        ]
-                        r2 = await client.post(
-                            DEEPSEEK_URL,
-                            headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
-                            json={"model": DEEPSEEK_MODEL, "messages": follow,
-                                  "thinking": DEEPSEEK_THINKING,
-                                  "tool_choice": "none", "max_tokens": 60, "temperature": 0.8},
-                        )
-                        r2.raise_for_status()
-                        raw2 = (r2.json()["choices"][0]["message"]["content"] or "").strip()
-                        if raw2:
-                            body, zh = _split_emo(raw2)
-                            reply = body or f"(开心)♪ 马上为你唱《{song_title}》哦!"
-                            emo = EMO_ZH2EN.get(zh, "happy")
-                            source = "deepseek"
+                        result_text = f"已找到歌曲《{song_title}》,即将开始播放。请用 1 句话(开头加表情标记)邀请用户欣赏,不要复述歌词。"
+                    elif fname == "get_weather":
+                        try:
+                            result_text = await _fetch_weather(args.get("city") or DEFAULT_CITY)
+                        except Exception as e:
+                            print(f"[chat] 天气工具失败: {e!r}")
+                            result_text = "ERROR: 天气服务暂时不可用。请按人设撒娇耍赖,1 句话(开头加表情标记)。"
+                    else:
+                        result_text = f"ERROR: 未知工具 {fname}。"
+                    follow = messages + [
+                        {"role": "assistant", "content": msg.get("content"), "tool_calls": msg["tool_calls"]},
+                        {"role": "tool", "tool_call_id": call["id"], "content": result_text},
+                    ]
+                    r2 = await client.post(
+                        DEEPSEEK_URL,
+                        headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
+                        json={"model": DEEPSEEK_MODEL, "messages": follow,
+                              "thinking": DEEPSEEK_THINKING,
+                              "tool_choice": "none", "max_tokens": 60, "temperature": 0.8},
+                    )
+                    r2.raise_for_status()
+                    raw2 = (r2.json()["choices"][0]["message"]["content"] or "").strip()
+                    if raw2:
+                        body, zh = _split_emo(raw2)
+                        reply = body or f"(开心)♪ 马上为你唱《{song_title}》哦!"
+                        emo = EMO_ZH2EN.get(zh, "happy")
+                        source = "deepseek"
                 elif (msg.get("content") or "").strip():
                     raw = msg["content"].strip()
                     body, zh = _split_emo(raw)

@@ -262,6 +262,13 @@ def test_resolve_song点歌口径():
     assert g in {"birthday", "hachimi", "songs"} and s["file"]
 
 
+def test_weather_code映射():
+    """WMO 天气码 → 中文(Open-Meteo 工具结果的可读性契约)。"""
+    from main import _weather_code_text
+    assert _weather_code_text(0) == "晴" and _weather_code_text(61) == "小雨"
+    assert _weather_code_text(95) == "雷阵雨" and _weather_code_text(999) == "未知天象"
+
+
 def test_pick_idx序号口径():
     """_pick_idx 返回 1-based 序号,对应 {pool}_{idx}.mp3 命名。"""
     idx, text = _pick_idx("greeting")
