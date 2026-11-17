@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import random
+import re
 from pathlib import Path
 
 import httpx
@@ -39,6 +40,10 @@ DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
 DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 TTS_VOICE = os.environ.get("WHALE_TTS_VOICE", "zh-CN-XiaoyiNeural")
 
+# 表情标记协议(借鉴 Open-LLM-VTuber 的 expression mapping,SVG 轻量版):
+# LLM 按 config/server_prompt.txt 在回复开头输出 (开心)(害羞)(傲娇)(难过)(困),由后端剥离成结构化字段
+EMO_RE = re.compile(r"^\s*[（(]\s*(开心|害羞|傲娇|难过|困)\s*[)）]\s*")
+
 
 def _load_dotenv() -> None:
     """极简 .env 支持(KEY=VALUE 每行),避免引入 python-dotenv 依赖。"""
@@ -60,6 +65,14 @@ app = FastAPI(title="whale-maid web", version="2.0-birthday")
 
 class ChatIn(BaseModel):
     text: str
+
+
+def _split_emo(reply: str):
+    """剥离回复开头的表情标记,返回 (正文, 表情或 None)。兼容 Python 3.9。"""
+    m = EMO_RE.match(reply)
+    if not m:
+        return reply, None
+    return reply[m.end():], m.group(1)
 
 
 def _pick(trigger: str) -> str:
@@ -89,7 +102,7 @@ async def eggs():
 async def chat(inp: ChatIn):
     text = inp.text.strip()[:500]
     if not text:
-        return {"reply": _pick("fallback"), "source": "offline"}
+        return {"reply": _pick("fallback"), "emo": None, "source": "offline"}
     if DEEPSEEK_KEY:
         try:
             async with httpx.AsyncClient(timeout=20) as client:
@@ -109,10 +122,12 @@ async def chat(inp: ChatIn):
                 r.raise_for_status()
                 reply = (r.json()["choices"][0]["message"]["content"] or "").strip()
                 if reply:
-                    return {"reply": reply, "source": "deepseek"}
+                    reply, emo = _split_emo(reply)
+                    if reply:
+                        return {"reply": reply, "emo": emo, "source": "deepseek"}
         except Exception as e:  # 网络/配额/超时——兜底,不冷场
             print(f"[chat] deepseek 失败,回落离线台词: {e!r}")
-    return {"reply": _offline_reply(text), "source": "offline"}
+    return {"reply": _offline_reply(text), "emo": None, "source": "offline"}
 
 
 @app.get("/api/tts")

@@ -1,7 +1,22 @@
 {
-  "version": "2.0-birthday",
+  "version": "2.1-birthday",
   "persona_source": "config/persona.md",
-  "comment": "彩蛋台词机器单一来源:网页版离线兜底 + scripts/make_egg_audio.py TTS 生成输入。文件名规范遵循 docs/06:小写+下划线,单句≤6s。",
+  "comment": "彩蛋台词机器单一来源:网页版离线兜底 + scripts/make_egg_audio.py TTS 生成输入。文件名规范遵循 docs/06:小写+下划线,单句≤6s。borrowed:触摸停止(hush)/发呆搭话(idle)/表情映射(emo)。",
+  "emo": {
+    "greeting": "happy",
+    "touch_head": "happy",
+    "touch_belly": "shy",
+    "birthday": "happy",
+    "sing": "happy",
+    "story": "normal",
+    "compliment": "shy",
+    "called_fat": "pouty",
+    "food": "happy",
+    "lazy": "pouty",
+    "hush": "normal",
+    "idle": "normal",
+    "fallback": "normal"
+  },
   "triggers": {
     "greeting": [
       "冉冉姐姐,你来啦!今天也要陪我玩哦,哼,才不是我等你等好久了呢。",
@@ -41,6 +56,15 @@
     ],
     "lazy": [
       "这个需求好麻烦……要不,明天再做?陪冉冉姐姐玩才是正经事!"
+    ],
+    "hush": [
+      "好啦好啦,小鲸灵安静了……抱抱!",
+      "嗯?要安静呀——嘘,我陪你悄悄待着。"
+    ],
+    "idle": [
+      "冉冉姐姐,陪我玩嘛~",
+      "吐泡泡,咕噜噜噜……看我的绝技!",
+      "困了困了……冉冉姐姐要不要一起眯一会儿?"
     ],
     "fallback": [
       "唔……冉冉姐姐说的话好深奥,让我再想亿会儿。",
