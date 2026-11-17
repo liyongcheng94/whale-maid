@@ -93,8 +93,9 @@ def extract(src_path: str, out_path: str) -> Image.Image:
     sat = a.max(axis=2) - a.min(axis=2)
     enclosed = (lum >= 235) & (sat <= 12) & (alpha > 0)
     elabels, en = ndimage.label(enclosed)
-    # 窗口为源图(裁剪内)坐标: 两腿之间区域, 按几何实测
-    WX0, WX1, WY0, WY1 = 205, 335, 544, 602
+    # 窗口为源图(裁剪内)坐标: 两腿之间区域, 按几何实测。
+    # 右界 292 必须避开右袜蕾丝(源图 x>=291)——过宽会吃掉袜子白色蕾丝
+    WX0, WX1, WY0, WY1 = 218, 289, 544, 602
     removed_enc = 0
     for i in range(1, en + 1):
         ys, xs = np.where(elabels == i)
@@ -104,10 +105,11 @@ def extract(src_path: str, out_path: str) -> Image.Image:
     if removed_enc:
         print(f"[clean] 封闭背景(两腿之间): {removed_enc} px")
 
-    # 两鞋之间残线(底座上缘 1px, 上下皆鞋面深色, minlum/near_clear 判据均够不到)——定点清除
+    # 两鞋之间残线(底座上缘 1-2px, 上下皆鞋面深色, minlum/near_clear 判据均够不到)
+    # ——定点清除: 左鞋右侧白线 x231-249 与中部 x250-306, 亮度窗口避开鞋面高光(250+)
     strip = np.zeros_like(alpha, dtype=bool)
-    strip[591:594, 250:306] = True
-    strip &= (lum >= 185) & (alpha > 0)
+    strip[589:595, 225:312] = True
+    strip &= (lum >= 190) & (lum <= 240) & (alpha > 0)
     alpha[strip] = 0
     if strip.sum():
         print(f"[clean] 两鞋之间残线: {int(strip.sum())} px")
