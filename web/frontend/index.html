@@ -13,33 +13,47 @@
     overflow:hidden; user-select:none; touch-action:manipulation;
     display:flex; flex-direction:column;
   }
-  /* ---- 背景气泡 ---- */
+  /* ---- 背景气泡与海浪 ---- */
   .bubble { position:absolute; bottom:-70px; border-radius:50%;
     background:rgba(255,255,255,.13); animation:rise linear infinite; pointer-events:none; }
   @keyframes rise { to { transform:translateY(-120vh); opacity:0; } }
+  .wave { position:fixed; left:-50%; width:200%; bottom:-24px; height:96px;
+    background:rgba(255,255,255,.09); border-radius:45% 55% 0 0 / 70px 50px 0 0;
+    animation:drift 11s ease-in-out infinite alternate; pointer-events:none; z-index:1; }
+  .wave.w2 { bottom:-40px; height:80px; background:rgba(255,255,255,.13); animation-duration:16s; animation-direction:alternate-reverse; }
+  @keyframes drift { from{transform:translateX(-4%)} to{transform:translateX(4%)} }
+
+  /* ---- 粒子特效 ---- */
+  .particle { position:fixed; z-index:60; pointer-events:none; animation:flyUp ease-out forwards; }
+  @keyframes flyUp { to { transform:translate(var(--dx),-260px) rotate(var(--rot)); opacity:0; } }
 
   /* ---- 顶栏 ---- */
   #topbar { position:relative; z-index:5; display:flex; align-items:center;
-    justify-content:space-between; padding:10px 14px; }
+    justify-content:space-between; padding:10px 12px; gap:8px; }
+  #ctl { display:flex; gap:6px; }
+  #ctl button { background:rgba(255,255,255,.16); border:none; color:#fff; font-size:16px;
+    width:38px; height:38px; border-radius:50%; cursor:pointer; backdrop-filter:blur(4px); }
+  #ctl button:active { transform:scale(.92); }
   #banner { display:none; background:linear-gradient(90deg,#ff9eb5,#ffd39e);
     color:#7a2d43; font-weight:bold; padding:8px 18px; border-radius:999px;
-    box-shadow:0 4px 14px rgba(0,0,0,.25); animation:pop .5s ease; }
+    box-shadow:0 4px 14px rgba(0,0,0,.25); animation:pop .5s ease; white-space:nowrap; }
   #chip { background:rgba(255,255,255,.16); color:#eaf6ff; font-size:13px;
-    padding:6px 12px; border-radius:999px; backdrop-filter:blur(4px); }
+    padding:6px 12px; border-radius:999px; backdrop-filter:blur(4px); white-space:nowrap; }
   @keyframes pop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
 
   /* ---- 舞台 ---- */
   #stage { flex:1; position:relative; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:6px; }
-  #speech { max-width:min(86vw,430px); background:#fff; color:#1c3a52;
-    font-size:17px; line-height:1.55; padding:12px 18px; border-radius:18px;
+    align-items:center; justify-content:center; gap:6px; z-index:2; }
+  #speech { max-width:min(88vw,440px); background:#fff; color:#1c3a52;
+    font-size:19px; line-height:1.55; padding:14px 20px; border-radius:20px;
     box-shadow:0 6px 18px rgba(0,0,0,.28); opacity:0; transform:translateY(12px) scale(.94);
-    transition:.25s ease; position:relative; text-align:center; min-height:0; }
+    transition:.25s ease; position:relative; text-align:center; min-height:0;
+    font-weight:500; }
   #speech.show { opacity:1; transform:translateY(0) scale(1); }
   #speech::after { content:""; position:absolute; left:50%; bottom:-10px;
     transform:translateX(-50%); border:10px solid transparent; border-top-color:#fff; border-bottom:0; }
-  #whaleSvg { width:min(74vw,370px); height:auto; display:block; }
-  #hint { color:#bfe4ff; font-size:13px; opacity:.85; }
+  #whaleSvg { width:min(76vw,380px); height:auto; display:block; }
+  #hint { color:#bfe4ff; font-size:14px; opacity:.85; }
 
   /* ---- 鲸鱼动画 ---- */
   #whaleG { animation:float 3.2s ease-in-out infinite; transform-origin:160px 150px; }
@@ -56,28 +70,41 @@
 
   /* ---- 底部操作坞 ---- */
   #dock { position:relative; z-index:5; display:flex; flex-direction:column;
-    align-items:center; gap:10px; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); }
-  #chips { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
-  .chipbtn { background:rgba(255,255,255,.18); color:#fff; border:none; font-size:14px;
-    padding:8px 14px; border-radius:999px; cursor:pointer; backdrop-filter:blur(4px); }
+    align-items:center; gap:10px; padding:10px 12px calc(14px + env(safe-area-inset-bottom)); }
+  #chips { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; max-width:96vw; }
+  .chipbtn { background:rgba(255,255,255,.18); color:#fff; border:none; font-size:15px;
+    padding:9px 15px; border-radius:999px; cursor:pointer; backdrop-filter:blur(4px); }
   .chipbtn:active { transform:scale(.94); }
-  #microw { display:flex; align-items:center; gap:12px; width:min(92vw,460px); }
-  #mic { width:62px; height:62px; border-radius:50%; border:none; font-size:26px;
+  .chipbtn.util { background:rgba(255,255,255,.28); }
+  #microw { display:flex; align-items:center; gap:10px; width:min(94vw,470px); }
+  #hush { width:48px; height:48px; border-radius:50%; border:none; font-size:20px;
+    background:rgba(255,255,255,.22); color:#fff; cursor:pointer; flex:none; }
+  #hush:active { transform:scale(.9); }
+  #mic { width:72px; height:72px; border-radius:50%; border:none; font-size:30px;
     background:#ffd39e; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3);
-    flex:none; transition:.15s; }
+    flex:none; transition:.15s; position:relative; }
   #mic.rec { background:#ff7fa0; animation:pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+  #mic.rec::before { content:""; position:absolute; inset:-9px; border-radius:50%;
+    border:3px solid #ff7fa0; animation:ring 1.2s ease-out infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  @keyframes ring { from{transform:scale(.85);opacity:.9} to{transform:scale(1.45);opacity:0} }
   #inputrow { flex:1; display:flex; gap:8px; }
-  #textbox { flex:1; border:none; border-radius:999px; padding:12px 18px; font-size:15px;
-    outline:none; background:rgba(255,255,255,.92); }
-  #send { border:none; border-radius:999px; padding:0 20px; font-size:15px; font-weight:bold;
+  #textbox { flex:1; border:none; border-radius:999px; padding:13px 18px; font-size:16px;
+    outline:none; background:rgba(255,255,255,.92); min-width:0; }
+  #send { border:none; border-radius:999px; padding:0 20px; font-size:16px; font-weight:bold;
     background:#0e5a8f; color:#fff; cursor:pointer; }
   #send:active { transform:scale(.94); }
 </style>
 </head>
 <body>
+  <div class="wave"></div>
+  <div class="wave w2"></div>
+
   <div id="topbar">
-    <div style="width:1px"></div>
+    <div id="ctl">
+      <button id="mute" title="声音开关">🔊</button>
+      <button id="fs" title="全屏">⛶</button>
+    </div>
     <div id="banner">🎂 冉冉姐姐,生日快乐!</div>
     <div id="chip">💬 台词模式</div>
   </div>
@@ -150,12 +177,14 @@
 
   <div id="dock">
     <div id="chips">
+      <button class="chipbtn util" data-repeat>🔁 再讲一个</button>
       <button class="chipbtn" data-say="生日快乐！">🎂 生日快乐！</button>
       <button class="chipbtn" data-say="唱首歌吧！">🎵 唱首歌！</button>
       <button class="chipbtn" data-say="给我讲个故事！">📖 讲故事！</button>
       <button class="chipbtn" data-say="你想吃白饭吗？">🍚 白饭！</button>
     </div>
     <div id="microw">
+      <button id="hush" title="安静一下">🤫</button>
       <button id="mic" title="按住说话">🎤</button>
       <div id="inputrow">
         <input id="textbox" placeholder="在这里对小鲸灵说话…" autocomplete="off">
@@ -167,9 +196,10 @@
 <script>
 "use strict";
 const THINKING = "让我想想……唔,让我再想亿会儿。";
+const SESSION_ID = "toy-" + new Date().toISOString().slice(0, 10); // 记忆按天分段
 const EGGS_URL = "/api/eggs";
-let EGGS = { triggers: { touch_head: ["咕噜噜?"], touch_belly: ["咕噜噜!"], greeting: ["冉冉姐姐好!"], fallback: ["咕噜噜……"] }, keyword_map: {} };
-let curAudio = null, hideTimer = null, rec = null, listening = false;
+let EGGS = { triggers: { touch_head: ["咕噜噜?"], touch_belly: ["咕噜噜!"], greeting: ["冉冉姐姐好!"], hush: ["好啦好啦……"], idle: ["冉冉姐姐,陪我玩嘛~"], fallback: ["咕噜噜……"] }, emo: {}, keyword_map: {} };
+let curAudio = null, hideTimer = null, rec = null, listening = false, lastPool = "greeting";
 
 const $ = id => document.getElementById(id);
 const speech = $("speech"), whaleG = $("whaleG"), chip = $("chip");
@@ -184,21 +214,88 @@ for (let i = 0; i < 12; i++) {
   document.body.appendChild(b);
 }
 
+/* ---- 粒子特效:生日彩带 / 摸头爱心 / 摸肚泡泡 ---- */
+function spawnParticles(kind, x, y) {
+  const conf = { confetti: ["🎊", "🎉", "🎂", "✨"], hearts: ["💙", "💗", "✨"], bubbles: ["🫧", "💧", "🫧"] }[kind];
+  if (!conf) return;
+  const n = kind === "confetti" ? 26 : 6;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement("div");
+    s.className = "particle";
+    s.textContent = conf[i % conf.length];
+    s.style.left = (x + (Math.random() * 120 - 60)) + "px";
+    s.style.top = (y - 10) + "px";
+    s.style.setProperty("--dx", (Math.random() * 180 - 90) + "px");
+    s.style.setProperty("--rot", (Math.random() * 720 - 360) + "deg");
+    s.style.animationDuration = (0.9 + Math.random() * 0.9) + "s";
+    s.style.fontSize = (16 + Math.random() * 14) + "px";
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 2000);
+  }
+}
+
 /* ---- 气泡说话 ---- */
-function bubble(text, ms = 6000) {
+function bubble(text, ms = 6500) {
   speech.textContent = text;
   speech.classList.add("show");
   clearTimeout(hideTimer);
   hideTimer = setTimeout(() => speech.classList.remove("show"), ms);
 }
 
-/* ---- TTS:edge-tts 优先,失败回落浏览器合成 ---- */
-async function speak(text) {
+/* ---- 播放与静音 ---- */
+let muted = localStorage.getItem("wm_muted") === "1";
+const muteBtn = $("mute");
+function setMuted(m) {
+  muted = m;
+  localStorage.setItem("wm_muted", m ? "1" : "0");
+  muteBtn.textContent = muted ? "🔇" : "🔊";
+  if (m) stopAudioOnly();
+}
+muteBtn.addEventListener("click", () => setMuted(!muted));
+setMuted(muted);
+
+$("fs").addEventListener("click", () => {
   try {
-    const r = await fetch("/api/tts?text=" + encodeURIComponent(text));
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  } catch (_) {}
+});
+
+function stopAudioOnly() {
+  if (curAudio) { curAudio.pause(); curAudio = null; }
+  try { speechSynthesis.cancel(); } catch (_) {}
+}
+function isPlaying() {
+  return (curAudio && !curAudio.paused && !curAudio.ended) ||
+    (window.speechSynthesis && speechSynthesis.speaking);
+}
+
+async function playUrl(url) {
+  if (muted) return true;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return false;
+    const blob = await r.blob();
+    stopAudioOnly();
+    curAudio = new Audio(URL.createObjectURL(blob));
+    await curAudio.play();
+    return true;
+  } catch (e) {
+    if (e && e.name === "NotAllowedError") return true; // 未交互时自动播放被拦,气泡仍在
+    return false;
+  }
+}
+
+/* ---- TTS:edge-tts(情绪韵律)优先 → 浏览器合成兜底 ---- */
+async function speak(text, emo) {
+  if (muted) return;
+  try {
+    const q = new URLSearchParams({ text });
+    if (emo) q.set("emo", emo);
+    const r = await fetch("/api/tts?" + q.toString());
     if (!r.ok) throw new Error(r.status);
     const blob = await r.blob();
-    if (curAudio) { curAudio.pause(); curAudio = null; }
+    stopAudioOnly();
     curAudio = new Audio(URL.createObjectURL(blob));
     await curAudio.play();
   } catch (e) {
@@ -208,18 +305,6 @@ async function speak(text) {
       u.lang = "zh-CN"; u.rate = 1.05;
       speechSynthesis.speak(u);
     } catch (_) { /* 静默:文字气泡仍在 */ }
-  }
-}
-
-function say(text, anim, emo) {
-  bubble(text);
-  speak(text);
-  setEmo(emo);
-  if (anim) {
-    whaleG.classList.remove(anim);
-    void whaleG.getBoundingClientRect(); // 强制重排以重启动画
-    whaleG.classList.add(anim);
-    setTimeout(() => whaleG.classList.remove(anim), 800);
   }
 }
 
@@ -234,7 +319,6 @@ const EMO_PARTS = {
 };
 const EMO_IDS = ["eyes", "eyesH", "eyesP", "eyesSad", "eyesSleepy",
   "mouthN", "mouthH", "mouthP", "mouthSad", "mouthSleepy"];
-const EMO_ZH = { "开心": "happy", "害羞": "shy", "傲娇": "pouty", "难过": "sad", "困": "sleepy" };
 
 function setEmo(name) {
   const cfg = EMO_PARTS[name] || EMO_PARTS.normal;
@@ -253,14 +337,29 @@ function setEmo(name) {
   if (z) z.style.display = cfg.zzz ? "" : "none";
 }
 
-/* ---- 播放控制(借鉴语音打断,简化为"摸一下就停") ---- */
-function isPlaying() {
-  return (curAudio && !curAudio.paused && !curAudio.ended) ||
-    (window.speechSynthesis && speechSynthesis.speaking);
+function animTrigger(anim) {
+  if (!anim) return;
+  whaleG.classList.remove(anim);
+  void whaleG.getBoundingClientRect(); // 强制重排以重启动画
+  whaleG.classList.add(anim);
+  setTimeout(() => whaleG.classList.remove(anim), 800);
 }
-function stopAudio() {
-  if (curAudio) { curAudio.pause(); curAudio = null; }
-  try { speechSynthesis.cancel(); } catch (_) {}
+
+/* ---- 台词播放:本地选句 → 预生成音频(零延迟)→ edge-tts → 浏览器合成 ---- */
+const pickIdx = pool => {
+  const arr = EGGS.triggers[pool] || EGGS.triggers.fallback;
+  const i = Math.floor(Math.random() * arr.length);
+  return { text: arr[i], idx: i + 1 };
+};
+
+async function sayEgg(pool, anim, pre) {
+  const p = pre || pickIdx(pool);
+  lastPool = pool || lastPool;
+  bubble(p.text);
+  setEmo(EGGS.emo && (EGGS.emo[pool] || EGGS.emo.fallback));
+  animTrigger(anim);
+  if (await playUrl(`/egg-audio/${p.pool || pool}_${p.idx}.mp3`)) return;
+  await speak(p.text, EGGS.emo && EGGS.emo[pool]);
 }
 
 /* ---- 发呆主动搭话(借鉴 MaiBot 主动消息;?idle=毫秒 可调,测试用) ---- */
@@ -270,53 +369,53 @@ function poke() {
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
     if (isPlaying()) { poke(); return; }
-    say(pick("idle"), Math.random() < .5 ? "wiggle" : "squash",
-      EGGS.emo && EGGS.emo.idle);
+    sayEgg("idle", Math.random() < .5 ? "wiggle" : "squash");
     poke();
   }, IDLE_MS);
 }
 
-const pick = pool => {
-  const arr = EGGS.triggers[pool] || EGGS.triggers.fallback;
-  return arr[Math.floor(Math.random() * arr.length)];
-};
-
-/* ---- 对话:DeepSeek(后端)→ 离线兜底 ---- */
+/* ---- 对话:DeepSeek(后端,多轮记忆)→ 离线兜底(直连预生成音频) ---- */
 async function chat(text) {
   poke();
   bubble(THINKING, 8000);
-  whaleG.classList.add("wiggle");
-  setTimeout(() => whaleG.classList.remove("wiggle"), 800);
+  animTrigger("wiggle");
   try {
     const r = await fetch("/api/chat", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ text, session_id: SESSION_ID })
     });
     const data = await r.json();
     chip.textContent = data.source === "deepseek" ? "🧠 聪明模式" : "⚠️ 台词兜底";
-    say(data.reply, null, EMO_ZH[data.emo] || (EGGS.emo && EGGS.emo.fallback));
+    if (data.source === "offline" && data.pool && data.idx) {
+      await sayEgg(data.pool, null, { text: data.reply, idx: data.idx, pool: data.pool });
+    } else {
+      lastPool = "fallback";
+      bubble(data.reply);
+      setEmo(data.emo);
+      await speak(data.reply, data.emo);
+    }
   } catch (e) {
     chip.textContent = "⚠️ 台词兜底";
-    say(pick("fallback"));
+    await sayEgg("fallback", null, null);
   }
 }
 
-/* ---- 触摸热区:说话中摸一下=停止(小孩能懂的"打断") ---- */
+/* ---- 触摸热区:永远是"要反应"(孩子在玩),停止交给 🤫 ---- */
 document.querySelectorAll(".hot").forEach(h => {
-  h.addEventListener("pointerdown", () => {
+  h.addEventListener("pointerdown", e => {
     poke();
-    if (isPlaying()) {
-      stopAudio();
-      say(pick("hush"), h.dataset.anim, EGGS.emo && EGGS.emo.hush);
-      return;
-    }
-    say(pick(h.dataset.pool), h.dataset.anim, EGGS.emo && EGGS.emo[h.dataset.pool]);
+    spawnParticles(h.dataset.pool === "touch_head" ? "hearts" : "bubbles", e.clientX, e.clientY);
+    sayEgg(h.dataset.pool, h.dataset.anim);
   });
 });
 
 /* ---- 快捷 chips ---- */
-document.querySelectorAll(".chipbtn").forEach(b => {
+document.querySelectorAll(".chipbtn[data-say]").forEach(b => {
   b.addEventListener("click", () => chat(b.dataset.say));
+});
+document.querySelector("[data-repeat]").addEventListener("click", () => {
+  poke();
+  sayEgg(lastPool, null);
 });
 
 /* ---- 文字输入 ---- */
@@ -326,6 +425,13 @@ $("send").addEventListener("click", () => {
 });
 $("textbox").addEventListener("keydown", e => { if (e.key === "Enter") $("send").click(); });
 
+/* ---- 🤫 安静按钮:专属"停止"控制 ---- */
+$("hush").addEventListener("pointerdown", () => {
+  poke();
+  stopAudioOnly();
+  sayEgg("hush", null);
+});
+
 /* ---- 语音:按住说话(浏览器识别) ---- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (SR) {
@@ -334,7 +440,7 @@ if (SR) {
   rec.onresult = e => chat(e.results[0][0].transcript);
   rec.onend = () => setListen(false);
   rec.onerror = () => { setListen(false); bubble("呜……我听不清,冉冉姐姐用字字告诉我好不好?"); };
-} 
+}
 const micBtn = $("mic");
 function setListen(on) {
   listening = on;
@@ -342,6 +448,7 @@ function setListen(on) {
   if (on) bubble("我在听……", 15000);
 }
 micBtn.addEventListener("pointerdown", () => {
+  poke();
   if (!rec) { bubble("这台浏览器不能听声音,用下面的字字告诉我吧!"); return; }
   try { rec.start(); } catch (_) {}
 });
@@ -353,15 +460,17 @@ fetch("/api/health").then(r => r.json()).then(h => {
   chip.textContent = h.deepseek ? "🧠 聪明模式" : "💬 台词模式";
 }).catch(() => {});
 const isBirthday = new Date().getMonth() === 10 && new Date().getDate() === 27;
-if (isBirthday || location.search.includes("force")) {
+const force = location.search.includes("force");
+if (isBirthday || force) {
   $("banner").style.display = "inline-block";
 }
 
 /* ---- 启动 ---- */
 fetch(EGGS_URL).then(r => r.json()).then(j => { EGGS = j; }).catch(() => {});
 setTimeout(() => {
-  const startPool = isBirthday || location.search.includes("force") ? "birthday" : "greeting";
-  say(pick(startPool), null, EGGS.emo && EGGS.emo[startPool]);
+  const startPool = isBirthday || force ? "birthday" : "greeting";
+  if (isBirthday || force) spawnParticles("confetti", innerWidth / 2, 130);
+  sayEgg(startPool, null);
   poke();
 }, 900);
 </script>

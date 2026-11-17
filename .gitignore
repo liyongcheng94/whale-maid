@@ -1,6 +1,7 @@
 src/
 .zcode/
 .venv/
+/data/
 web/backend/.env
 web/backend/tts_cache/
 assets_audio/
