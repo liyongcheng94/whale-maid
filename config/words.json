@@ -1,26 +1,96 @@
 {
-  "version": "1.0",
-  "comment": "英语单词卡(R7):每日按日期随机 3 词;音频三件套 word_{word}_en(en-US-AnaNeural 词)/word_{word}_zh(中文释义)/word_{word}_sent(en 例句),make_egg_audio 扫描本文件预生成。",
+  "version": "2.0-pep2026g4s2",
+  "comment": "英语角(2026-11-18 R14 换血):锚定新 PEP 四年级下册 2026 春版 6 单元话题(Class rules/Family rules/Time for school/Going shopping/Farms and us/On the farm),听说认读为主。",
   "words": [
-    { "word": "apple", "zh": "苹果", "sentence": "I like apples." },
-    { "word": "banana", "zh": "香蕉", "sentence": "The banana is yellow." },
-    { "word": "cat", "zh": "小猫", "sentence": "I have a cat." },
-    { "word": "dog", "zh": "小狗", "sentence": "My dog is cute." },
-    { "word": "egg", "zh": "鸡蛋", "sentence": "I eat an egg." },
-    { "word": "fish", "zh": "鱼", "sentence": "Fish can swim." },
-    { "word": "sun", "zh": "太阳", "sentence": "The sun is bright." },
-    { "word": "moon", "zh": "月亮", "sentence": "The moon is up." },
-    { "word": "star", "zh": "星星", "sentence": "Stars are pretty." },
-    { "word": "water", "zh": "水", "sentence": "I drink water." },
-    { "word": "milk", "zh": "牛奶", "sentence": "Milk is white." },
-    { "word": "book", "zh": "书", "sentence": "I read a book." },
-    { "word": "flower", "zh": "花", "sentence": "The flower is red." },
-    { "word": "tree", "zh": "树", "sentence": "The tree is tall." },
-    { "word": "big", "zh": "大", "sentence": "The whale is big." },
-    { "word": "small", "zh": "小", "sentence": "The ant is small." },
-    { "word": "red", "zh": "红色", "sentence": "The apple is red." },
-    { "word": "blue", "zh": "蓝色", "sentence": "The sky is blue." },
-    { "word": "hello", "zh": "你好", "sentence": "Hello, my friend!" },
-    { "word": "whale", "zh": "鲸鱼", "sentence": "I am a whale!" }
+    {
+      "word": "rule",
+      "zh": "规则",
+      "sentence": "Follow the class rules."
+    },
+    {
+      "word": "polite",
+      "zh": "有礼貌的",
+      "sentence": "Be polite at school."
+    },
+    {
+      "word": "follow",
+      "zh": "遵守",
+      "sentence": "Please follow me."
+    },
+    {
+      "word": "chore",
+      "zh": "家务",
+      "sentence": "I do chores at home."
+    },
+    {
+      "word": "family",
+      "zh": "家庭",
+      "sentence": "I love my family."
+    },
+    {
+      "word": "timetable",
+      "zh": "时间表",
+      "sentence": "Look at the timetable."
+    },
+    {
+      "word": "clock",
+      "zh": "时钟",
+      "sentence": "The clock says seven."
+    },
+    {
+      "word": "price",
+      "zh": "价格",
+      "sentence": "What is the price?"
+    },
+    {
+      "word": "buy",
+      "zh": "买",
+      "sentence": "I want to buy a book."
+    },
+    {
+      "word": "money",
+      "zh": "钱",
+      "sentence": "Here is the money."
+    },
+    {
+      "word": "farm",
+      "zh": "农场",
+      "sentence": "Welcome to my farm."
+    },
+    {
+      "word": "farmer",
+      "zh": "农民",
+      "sentence": "The farmer works hard."
+    },
+    {
+      "word": "vegetable",
+      "zh": "蔬菜",
+      "sentence": "Eat more vegetables."
+    },
+    {
+      "word": "healthy",
+      "zh": "健康的",
+      "sentence": "Fresh food is healthy."
+    },
+    {
+      "word": "food",
+      "zh": "食物",
+      "sentence": "Food comes from farms."
+    },
+    {
+      "word": "fresh",
+      "zh": "新鲜的",
+      "sentence": "These eggs are fresh."
+    },
+    {
+      "word": "early",
+      "zh": "早的",
+      "sentence": "I get up early."
+    },
+    {
+      "word": "animal",
+      "zh": "动物",
+      "sentence": "Farm animals are friends."
+    }
   ]
 }
