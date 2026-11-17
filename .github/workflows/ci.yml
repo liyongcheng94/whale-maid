@@ -1,7 +1,7 @@
 # whale-maid CI:与本地同一套闸门(scripts/verify.py)
 # 设计取舍:仓库极小,backend-tests 与 verify 常跑全量(≈1 分钟),不做变更范围门控;
 #           文档闸门永远跑——docs-only 改动同样受 docs/config 闸门约束。
-# runner 钉 ubuntu-24.04:ubuntu-latest(26.04)已不提供 Python 3.9(与家里机器同版本验证)。
+# runner 钉 ubuntu-24.04(latest=26.04 无 3.13 打包);Python 3.13 与家里机器(2026-11-17 升级)及公司机器对齐。
 
 name: ci
 
@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.9"   # 与家里机器一致,防版本漂移
+          python-version: "3.13"   # 与两台开发机一致;3.10+ 语法(dict | None)已入代码
       - name: Run verify gates (docs/patch/config/audio/web)
         run: python scripts/verify.py
 
@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          python-version: "3.13"
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
