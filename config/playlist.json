@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "comment": "歌单机器单一来源：web 离线路由 + 固件 play_music 同步清单。file 对齐 assets_audio/music/（全 ASCII 小写下划线），中文歌名只在 title/alias。组顺序即路由优先级（birthday > hachimi > songs）。来源与许可见 assets_audio/music/ATTRIBUTION.md。",
+  "comment": "歌单机器单一来源：web 离线路由 + 固件 play_music 同步清单。file 对齐 assets_audio/music/（全 ASCII 小写下划线），中文歌名只在 title/alias。组顺序即路由优先级（birthday > hachimi > songs）。来源与许可见 docs/08_音乐来源登记.md。",
   "groups": {
     "birthday": {
       "keywords": ["生日歌", "生日快乐歌"],
