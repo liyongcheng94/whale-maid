@@ -16,21 +16,111 @@
           "name": "加减法的意义与关系",
           "topic": "m_addsub_rel",
           "questions": [
-            { "id": "a11", "tier": "basic", "prompt": "已知 340+120=460。不用计算,直接写出 460-120 的得数。", "answer": 220, "scaffold": "减法是加法的逆运算:和减去一个加数,等于另一个加数。" },
-            { "id": "a12", "tier": "basic", "prompt": "已知 56+44=100。直接写出 100-56 的得数。", "answer": 44, "scaffold": "和减去其中一个加数,就是另一个加数。" },
-            { "id": "a13", "tier": "basic", "prompt": "已知 150-90=60。直接写出 90+60 的得数。", "answer": 150, "scaffold": "被减数=减数+差,把三块拼回去。" },
-            { "id": "a14", "tier": "basic", "prompt": "0+567=?", "answer": 567, "scaffold": "一个数加上 0,还是它自己。" },
-            { "id": "a15", "tier": "basic", "prompt": "已知 98-64=34。直接写出 64+34 的得数。", "answer": 98, "scaffold": "减数+差=被减数,拼回去看看。" },
-            { "id": "a16", "tier": "standard", "prompt": "根据 25×4=100,直接写出 100÷4 的得数。", "answer": 25, "scaffold": "积除以一个因数,等于另一个因数。" },
-            { "id": "a17", "tier": "standard", "prompt": "根据 63÷7=9,直接写出 63÷9 的得数。", "answer": 7, "scaffold": "被除数÷商=除数,试试看。" },
-            { "id": "a18", "tier": "standard", "prompt": "( )-88=12,括号里的数是多少?", "answer": 100, "scaffold": "被减数=减数+差,先拼再算。" },
-            { "id": "a19", "tier": "standard", "prompt": "一个数加上 25 等于 71,这个数是多少?", "answer": 46, "scaffold": "和-一个加数=另一个加数。" },
-            { "id": "a1a", "tier": "standard", "prompt": "一道减法题里,减数是 30,差也是 30。被减数是多少?", "answer": 60, "scaffold": "被减数=减数+差,两个 30 拼起来。" },
-            { "id": "a1b", "tier": "challenge", "prompt": "一道减法题里,被减数、减数与差的和是 120。被减数是多少?", "answer": 60, "scaffold": "被减数=减数+差,所以三者的和其实是 2 个被减数。" },
-            { "id": "a1c", "tier": "challenge", "prompt": "两个数的和比第一个加数大 25。第二个加数是多少?", "answer": 25, "scaffold": "和-一个加数=另一个加数——题目里已经藏着这句话了。" },
-            { "id": "a1d", "tier": "challenge", "prompt": "一个数先减去 36,再加上 18,结果还是 50。这个数原来是多少?", "answer": 68, "scaffold": "倒着走:50-18+36,一步步退回去。" },
-            { "id": "a1e", "tier": "challenge", "prompt": "甲、乙两数的和是 100,甲比乙大 20。甲是多少?", "answer": 60, "scaffold": "如果甲拿 20 给乙,两个数就一样大——先算 smaller=100÷2。" },
-            { "id": "a1f", "tier": "challenge", "prompt": "差比被减数小 15。减数是多少?", "answer": 15, "scaffold": "被减数-减数=差,移一移:减数=被减数-差。" }
+            {
+              "id": "a11",
+              "tier": "basic",
+              "prompt": "已知 340+120=460。不用计算,直接写出 460-120 的得数。",
+              "answer": 220,
+              "scaffold": "减法是加法的逆运算:和减去一个加数,等于另一个加数。"
+            },
+            {
+              "id": "a12",
+              "tier": "basic",
+              "prompt": "已知 56+44=100。直接写出 100-56 的得数。",
+              "answer": 44,
+              "scaffold": "和减去其中一个加数,就是另一个加数。"
+            },
+            {
+              "id": "a13",
+              "tier": "basic",
+              "prompt": "已知 150-90=60。直接写出 90+60 的得数。",
+              "answer": 150,
+              "scaffold": "被减数=减数+差,把三块拼回去。"
+            },
+            {
+              "id": "a14",
+              "tier": "basic",
+              "prompt": "0+567=?",
+              "answer": 567,
+              "scaffold": "一个数加上 0,还是它自己。"
+            },
+            {
+              "id": "a15",
+              "tier": "basic",
+              "prompt": "已知 98-64=34。直接写出 64+34 的得数。",
+              "answer": 98,
+              "scaffold": "减数+差=被减数,拼回去看看。"
+            },
+            {
+              "id": "a16",
+              "tier": "standard",
+              "prompt": "根据 25×4=100,直接写出 100÷4 的得数。",
+              "answer": 25,
+              "scaffold": "积除以一个因数,等于另一个因数。"
+            },
+            {
+              "id": "a17",
+              "tier": "standard",
+              "prompt": "根据 63÷7=9,直接写出 63÷9 的得数。",
+              "answer": 7,
+              "scaffold": "被除数÷商=除数,试试看。"
+            },
+            {
+              "id": "a18",
+              "tier": "standard",
+              "prompt": "( )-88=12,括号里的数是多少?",
+              "answer": 100,
+              "scaffold": "被减数=减数+差,先拼再算。"
+            },
+            {
+              "id": "a19",
+              "tier": "standard",
+              "prompt": "一个数加上 25 等于 71,这个数是多少?",
+              "answer": 46,
+              "scaffold": "和-一个加数=另一个加数。"
+            },
+            {
+              "id": "a1a",
+              "tier": "standard",
+              "prompt": "一道减法题里,减数是 30,差也是 30。被减数是多少?",
+              "answer": 60,
+              "scaffold": "被减数=减数+差,两个 30 拼起来。"
+            },
+            {
+              "id": "a1b",
+              "tier": "challenge",
+              "prompt": "一道减法题里,被减数、减数与差的和是 120。被减数是多少?",
+              "answer": 60,
+              "scaffold": "被减数=减数+差,所以三者的和其实是 2 个被减数。"
+            },
+            {
+              "id": "a1c",
+              "tier": "challenge",
+              "prompt": "两个数的和比第一个加数大 25。第二个加数是多少?",
+              "answer": 25,
+              "scaffold": "和-一个加数=另一个加数——题目里已经藏着这句话了。"
+            },
+            {
+              "id": "a1d",
+              "tier": "challenge",
+              "prompt": "一个数先减去 36,再加上 18,结果还是 50。这个数原来是多少?",
+              "answer": 68,
+              "scaffold": "倒着走:50-18+36,一步步退回去。"
+            },
+            {
+              "id": "a1e",
+              "tier": "challenge",
+              "prompt": "甲、乙两数的和是 100,甲比乙大 20。甲是多少?",
+              "answer": 60,
+              "scaffold": "如果甲拿 20 给乙,两个数就一样大——先算 smaller=100÷2。"
+            },
+            {
+              "id": "a1f",
+              "tier": "challenge",
+              "prompt": "差比被减数小 15。减数是多少?",
+              "answer": 15,
+              "scaffold": "被减数-减数=差,移一移:减数=被减数-差。"
+            }
           ]
         },
         {
@@ -38,17 +128,83 @@
           "name": "乘除法的意义与关系",
           "topic": "m_muldiv_rel",
           "questions": [
-            { "id": "b11", "tier": "basic", "prompt": "已知 6×8=48。直接写出 48÷8 的得数。", "answer": 6, "scaffold": "积÷一个因数=另一个因数。" },
-            { "id": "b12", "tier": "basic", "prompt": "已知 35÷7=5。直接写出 35÷5 的得数。", "answer": 7, "scaffold": "被除数÷商=除数。" },
-            { "id": "b13", "tier": "basic", "prompt": "已知 12×5=60。直接写出 60÷12 的得数。", "answer": 5, "scaffold": "积÷一个因数=另一个因数。" },
-            { "id": "b14", "tier": "standard", "prompt": "( )×9=81,括号里的数是多少?", "answer": 9, "scaffold": "积÷一个因数=另一个因数。" },
-            { "id": "b15", "tier": "standard", "prompt": "一个数除以 8,商是 12。这个数是多少?", "answer": 96, "scaffold": "被除数=商×除数。" },
-            { "id": "b16", "tier": "standard", "prompt": "两个因数的积是 72,其中一个因数是 8。另一个因数是多少?", "answer": 9, "scaffold": "积÷一个因数=另一个因数。" },
-            { "id": "b17", "tier": "standard", "prompt": "0 除以一个不是 0 的数,得多少?", "answer": 0, "scaffold": "0 除以任何不是 0 的数都得 0。" },
-            { "id": "b18", "tier": "challenge", "prompt": "被除数、除数与商的和是 99,其中商是 9、除数是 9。被除数是多少?", "answer": 81, "scaffold": "被除数=商×除数,先算出它,再核对总和。" },
-            { "id": "b19", "tier": "challenge", "prompt": "甲数是乙数的 6 倍,甲乙两数的和是 84。乙数是多少?", "answer": 14, "scaffold": "甲=6×乙,所以和=7 个乙——先除一下。" },
-            { "id": "b1a", "tier": "challenge", "prompt": "从 100 里连续减去同一个数,减 4 次正好减完。减去的数是多少?", "answer": 25, "scaffold": "连续减 4 次减完,就是 100÷4。" },
-            { "id": "b1b", "tier": "challenge", "prompt": "一个数除以 5,商是 12,余数是 3。这个数是多少?", "answer": 63, "scaffold": "被除数=商×除数+余数。" }
+            {
+              "id": "b11",
+              "tier": "basic",
+              "prompt": "已知 6×8=48。直接写出 48÷8 的得数。",
+              "answer": 6,
+              "scaffold": "积÷一个因数=另一个因数。"
+            },
+            {
+              "id": "b12",
+              "tier": "basic",
+              "prompt": "已知 35÷7=5。直接写出 35÷5 的得数。",
+              "answer": 7,
+              "scaffold": "被除数÷商=除数。"
+            },
+            {
+              "id": "b13",
+              "tier": "basic",
+              "prompt": "已知 12×5=60。直接写出 60÷12 的得数。",
+              "answer": 5,
+              "scaffold": "积÷一个因数=另一个因数。"
+            },
+            {
+              "id": "b14",
+              "tier": "standard",
+              "prompt": "( )×9=81,括号里的数是多少?",
+              "answer": 9,
+              "scaffold": "积÷一个因数=另一个因数。"
+            },
+            {
+              "id": "b15",
+              "tier": "standard",
+              "prompt": "一个数除以 8,商是 12。这个数是多少?",
+              "answer": 96,
+              "scaffold": "被除数=商×除数。"
+            },
+            {
+              "id": "b16",
+              "tier": "standard",
+              "prompt": "两个因数的积是 72,其中一个因数是 8。另一个因数是多少?",
+              "answer": 9,
+              "scaffold": "积÷一个因数=另一个因数。"
+            },
+            {
+              "id": "b17",
+              "tier": "standard",
+              "prompt": "0 除以一个不是 0 的数,得多少?",
+              "answer": 0,
+              "scaffold": "0 除以任何不是 0 的数都得 0。"
+            },
+            {
+              "id": "b18",
+              "tier": "challenge",
+              "prompt": "被除数、除数与商的和是 99,其中商是 9、除数是 9。被除数是多少?",
+              "answer": 81,
+              "scaffold": "被除数=商×除数,先算出它,再核对总和。"
+            },
+            {
+              "id": "b19",
+              "tier": "challenge",
+              "prompt": "甲数是乙数的 6 倍,甲乙两数的和是 84。乙数是多少?",
+              "answer": 14,
+              "scaffold": "甲=6×乙,所以和=7 个乙——先除一下。"
+            },
+            {
+              "id": "b1a",
+              "tier": "challenge",
+              "prompt": "从 100 里连续减去同一个数,减 4 次正好减完。减去的数是多少?",
+              "answer": 25,
+              "scaffold": "连续减 4 次减完,就是 100÷4。"
+            },
+            {
+              "id": "b1b",
+              "tier": "challenge",
+              "prompt": "一个数除以 5,商是 12,余数是 3。这个数是多少?",
+              "answer": 63,
+              "scaffold": "被除数=商×除数+余数。"
+            }
           ]
         },
         {
@@ -56,28 +212,374 @@
           "name": "有关 0 的运算与四则应用",
           "topic": "m_zero_ops",
           "questions": [
-            { "id": "c11", "tier": "basic", "prompt": "0+456=?", "answer": 456, "scaffold": "一个数加上 0,还是它自己。" },
-            { "id": "c12", "tier": "basic", "prompt": "456-0=?", "answer": 456, "scaffold": "一个数减去 0,还是它自己。" },
-            { "id": "c13", "tier": "basic", "prompt": "0×38=?", "answer": 0, "scaffold": "0 乘任何数都得 0。" },
-            { "id": "c14", "tier": "basic", "prompt": "567-567=?", "answer": 0, "scaffold": "自己减自己,什么都不剩。" },
-            { "id": "c15", "tier": "standard", "prompt": "100-0÷5=?", "answer": 100, "scaffold": "先算 0÷5,再算减法——注意运算顺序。" },
-            { "id": "c16", "tier": "standard", "prompt": "(75-75)×8=?", "answer": 0, "scaffold": "括号里先算,0 乘任何数都得 0。" },
-            { "id": "c17", "tier": "standard", "prompt": "一个数减去它自己得 0;它除以它自己(不是 0)得多少?", "answer": 1, "scaffold": "被除数=除数且不为 0 时,商是 1。" },
-            { "id": "c18", "tier": "challenge", "prompt": "图书角原有 85 本书,借出 27 本,又还回 27 本。现在有多少本?", "answer": 85, "scaffold": "借多少还多少,总数不变——先列式再算。" },
-            { "id": "c19", "tier": "challenge", "prompt": "32 个人坐船过河,每条船最多坐 6 人。至少要租几条船?", "answer": 6, "scaffold": "32÷6=5 余 2——剩下的人也要坐船,想想商要不要加 1。" },
-            { "id": "c1a", "tier": "challenge", "prompt": "一列火车每小时行 120 千米,行了 3 小时。两地相距多少千米?", "answer": 360, "scaffold": "路程=速度×时间,用乘法的意义列式。" }
+            {
+              "id": "c11",
+              "tier": "basic",
+              "prompt": "0+456=?",
+              "answer": 456,
+              "scaffold": "一个数加上 0,还是它自己。"
+            },
+            {
+              "id": "c12",
+              "tier": "basic",
+              "prompt": "456-0=?",
+              "answer": 456,
+              "scaffold": "一个数减去 0,还是它自己。"
+            },
+            {
+              "id": "c13",
+              "tier": "basic",
+              "prompt": "0×38=?",
+              "answer": 0,
+              "scaffold": "0 乘任何数都得 0。"
+            },
+            {
+              "id": "c14",
+              "tier": "basic",
+              "prompt": "567-567=?",
+              "answer": 0,
+              "scaffold": "自己减自己,什么都不剩。"
+            },
+            {
+              "id": "c15",
+              "tier": "standard",
+              "prompt": "100-0÷5=?",
+              "answer": 100,
+              "scaffold": "先算 0÷5,再算减法——注意运算顺序。"
+            },
+            {
+              "id": "c16",
+              "tier": "standard",
+              "prompt": "(75-75)×8=?",
+              "answer": 0,
+              "scaffold": "括号里先算,0 乘任何数都得 0。"
+            },
+            {
+              "id": "c17",
+              "tier": "standard",
+              "prompt": "一个数减去它自己得 0;它除以它自己(不是 0)得多少?",
+              "answer": 1,
+              "scaffold": "被除数=除数且不为 0 时,商是 1。"
+            },
+            {
+              "id": "c18",
+              "tier": "challenge",
+              "prompt": "图书角原有 85 本书,借出 27 本,又还回 27 本。现在有多少本?",
+              "answer": 85,
+              "scaffold": "借多少还多少,总数不变——先列式再算。"
+            },
+            {
+              "id": "c19",
+              "tier": "challenge",
+              "prompt": "32 个人坐船过河,每条船最多坐 6 人。至少要租几条船?",
+              "answer": 6,
+              "scaffold": "32÷6=5 余 2——剩下的人也要坐船,想想商要不要加 1。"
+            },
+            {
+              "id": "c1a",
+              "tier": "challenge",
+              "prompt": "一列火车每小时行 120 千米,行了 3 小时。两地相距多少千米?",
+              "answer": 360,
+              "scaffold": "路程=速度×时间,用乘法的意义列式。"
+            }
           ]
         }
       ]
     },
-    { "id": "u2", "name": "观察物体(二)", "order": 2, "planned": true, "levels": [] },
-    { "id": "u3", "name": "运算定律", "order": 3, "planned": true, "levels": [],
-      "note": "对齐知识图谱 m_addlaw/m_mullaw/m_distlaw/m_smart_calc(轮次 R3-R5 开放)" },
-    { "id": "u4", "name": "小数的意义和性质", "order": 4, "planned": true, "levels": [],
-      "note": "对齐 m_dec_mean/m_dec_props/m_dec_compare/m_dec_shift(轮次 R3-R5 开放)" },
-    { "id": "u5", "name": "三角形", "order": 5, "planned": true, "levels": [] },
-    { "id": "u6", "name": "小数的加法和减法", "order": 6, "planned": true, "levels": [] },
-    { "id": "u7", "name": "图形的运动(二)", "order": 7, "planned": true, "levels": [] },
-    { "id": "u8", "name": "平均数与复式条形统计图", "order": 8, "planned": true, "levels": [] }
+    {
+      "id": "u2",
+      "name": "观察物体(二)",
+      "order": 2,
+      "planned": true,
+      "levels": []
+    },
+    {
+      "id": "u3",
+      "name": "运算定律",
+      "order": 3,
+      "levels": [
+        {
+          "id": "m3-1",
+          "name": "加法交换律和结合律",
+          "topic": "m_addlaw",
+          "questions": [
+            {
+              "id": "d11",
+              "tier": "basic",
+              "prompt": "28+72=?",
+              "answer": 100,
+              "scaffold": "凑整好朋友:8 和 2 先握手。"
+            },
+            {
+              "id": "d12",
+              "tier": "basic",
+              "prompt": "45+55=?",
+              "answer": 100,
+              "scaffold": "5 和 5 先凑 10。"
+            },
+            {
+              "id": "d13",
+              "tier": "basic",
+              "prompt": "交换律说:58+42 和 42+58 的得数一样。这个和是多少?",
+              "answer": 100,
+              "scaffold": "随便按哪个顺序加,答案都一样。"
+            },
+            {
+              "id": "d14",
+              "tier": "standard",
+              "prompt": "用结合律算:25+38+75=?",
+              "answer": 138,
+              "scaffold": "先把 25 和 75 凑成 100,再加 38。"
+            },
+            {
+              "id": "d15",
+              "tier": "standard",
+              "prompt": "61+29+71=?",
+              "answer": 161,
+              "scaffold": "61 和 29 是好朋友,先加它们。"
+            },
+            {
+              "id": "d16",
+              "tier": "standard",
+              "prompt": "17+45+83=?",
+              "answer": 145,
+              "scaffold": "17 和 83 凑成 100。"
+            },
+            {
+              "id": "d17",
+              "tier": "standard",
+              "prompt": "(23+56)+44 按 23+(56+44) 算,得数是多少?",
+              "answer": 123,
+              "scaffold": "56 和 44 先凑 100。"
+            },
+            {
+              "id": "d18",
+              "tier": "challenge",
+              "prompt": "58+39+42+61=?",
+              "answer": 200,
+              "scaffold": "两两配对:58 和 42 一组,39 和 61 一组。"
+            },
+            {
+              "id": "d19",
+              "tier": "challenge",
+              "prompt": "99+38=?",
+              "answer": 137,
+              "scaffold": "把 99 看成 100-1,先加 100 再退 1。"
+            },
+            {
+              "id": "d1a",
+              "tier": "challenge",
+              "prompt": "44+67+56+33=?",
+              "answer": 200,
+              "scaffold": "44+56 和 67+33,两组都能凑整。"
+            },
+            {
+              "id": "d1b",
+              "tier": "challenge",
+              "prompt": "1+2+3+4+5+6+7+8+9=?,用首尾配对的办法。",
+              "answer": 45,
+              "scaffold": "1+9、2+8、3+7、4+6,各凑 10。"
+            }
+          ]
+        },
+        {
+          "id": "m3-2",
+          "name": "乘法交换律和结合律",
+          "topic": "m_mullaw",
+          "questions": [
+            {
+              "id": "d21",
+              "tier": "basic",
+              "prompt": "25×4=?",
+              "answer": 100,
+              "scaffold": "25 和 4 是天生一对,乘起来正好 100。"
+            },
+            {
+              "id": "d22",
+              "tier": "basic",
+              "prompt": "125×8=?",
+              "answer": 1000,
+              "scaffold": "125 和 8 凑成 1000。"
+            },
+            {
+              "id": "d23",
+              "tier": "basic",
+              "prompt": "交换律说:5×23 和 23×5 得数一样。这个积是多少?",
+              "answer": 115,
+              "scaffold": "按哪个顺序乘都一样,挑好算的顺序。"
+            },
+            {
+              "id": "d24",
+              "tier": "standard",
+              "prompt": "用结合律算:25×16×4=?",
+              "answer": 1600,
+              "scaffold": "先把 25 和 4 乘起来。"
+            },
+            {
+              "id": "d25",
+              "tier": "standard",
+              "prompt": "4×7×25=?",
+              "answer": 700,
+              "scaffold": "4 和 25 是好朋友——先交换再结合。"
+            },
+            {
+              "id": "d26",
+              "tier": "standard",
+              "prompt": "2×5×23=?",
+              "answer": 230,
+              "scaffold": "2×5=10,先乘它俩。"
+            },
+            {
+              "id": "d27",
+              "tier": "standard",
+              "prompt": "50×2×18=?",
+              "answer": 1800,
+              "scaffold": "50×2=100。"
+            },
+            {
+              "id": "d28",
+              "tier": "challenge",
+              "prompt": "125×32=?",
+              "answer": 4000,
+              "scaffold": "把 32 拆成 8×4,先乘 125×8。"
+            },
+            {
+              "id": "d29",
+              "tier": "challenge",
+              "prompt": "25×24=?",
+              "answer": 600,
+              "scaffold": "24=4×6,先乘 25×4。"
+            },
+            {
+              "id": "d2a",
+              "tier": "challenge",
+              "prompt": "50×16=?",
+              "answer": 800,
+              "scaffold": "16=2×8,先算 50×2。"
+            }
+          ]
+        },
+        {
+          "id": "m3-3",
+          "name": "乘法分配律与简便计算",
+          "topic": "m_distlaw",
+          "questions": [
+            {
+              "id": "d31",
+              "tier": "basic",
+              "prompt": "25×(4+6)=?",
+              "answer": 250,
+              "scaffold": "分配律:分别乘 4 和 6 再相加;或者先算括号里的 10。"
+            },
+            {
+              "id": "d32",
+              "tier": "basic",
+              "prompt": "(20+5)×4=?",
+              "answer": 100,
+              "scaffold": "20 和 5 分别乘 4,再相加。"
+            },
+            {
+              "id": "d33",
+              "tier": "basic",
+              "prompt": "5×(8+2)=?",
+              "answer": 50,
+              "scaffold": "括号里 8+2=10,先算更省事。"
+            },
+            {
+              "id": "d34",
+              "tier": "standard",
+              "prompt": "102×45=?",
+              "answer": 4590,
+              "scaffold": "把 102 拆成 100+2,分别乘 45 再相加。"
+            },
+            {
+              "id": "d35",
+              "tier": "standard",
+              "prompt": "99×5=?",
+              "answer": 495,
+              "scaffold": "把 99 拆成 100-1:100 个 5 少 1 个 5。"
+            },
+            {
+              "id": "d36",
+              "tier": "standard",
+              "prompt": "98×25=?",
+              "answer": 2450,
+              "scaffold": "98=100-2,乘完再减。"
+            },
+            {
+              "id": "d37",
+              "tier": "standard",
+              "prompt": "64×99+64=?",
+              "answer": 6400,
+              "scaffold": "逆用分配律:64×(99+1)。"
+            },
+            {
+              "id": "d38",
+              "tier": "challenge",
+              "prompt": "25×99+25=?",
+              "answer": 2500,
+              "scaffold": "99 个 25 加 1 个 25,一共 100 个 25。"
+            },
+            {
+              "id": "d39",
+              "tier": "challenge",
+              "prompt": "63×101-63=?",
+              "answer": 6300,
+              "scaffold": "101 个 63 减 1 个 63。"
+            },
+            {
+              "id": "d3a",
+              "tier": "challenge",
+              "prompt": "36×34+36×66=?",
+              "answer": 3600,
+              "scaffold": "都带 36,提出来:36×(34+66)。"
+            },
+            {
+              "id": "d3b",
+              "tier": "challenge",
+              "prompt": "72×125=?",
+              "answer": 9000,
+              "scaffold": "72=8×9,先算 125×8=1000。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "name": "小数的意义和性质",
+      "order": 4,
+      "planned": true,
+      "levels": [],
+      "note": "对齐 m_dec_mean/m_dec_props/m_dec_compare/m_dec_shift(轮次 R3-R5 开放)"
+    },
+    {
+      "id": "u5",
+      "name": "三角形",
+      "order": 5,
+      "planned": true,
+      "levels": []
+    },
+    {
+      "id": "u6",
+      "name": "小数的加法和减法",
+      "order": 6,
+      "planned": true,
+      "levels": []
+    },
+    {
+      "id": "u7",
+      "name": "图形的运动(二)",
+      "order": 7,
+      "planned": true,
+      "levels": []
+    },
+    {
+      "id": "u8",
+      "name": "平均数与复式条形统计图",
+      "order": 8,
+      "planned": true,
+      "levels": []
+    }
   ]
 }

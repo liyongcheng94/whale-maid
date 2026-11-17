@@ -91,5 +91,6 @@ class TestKidEndpoints:
         body = r.json()
         units = {u["name"]: u for u in body["units"]}
         assert units["四则运算"]["levels"], "第一单元应有可玩关卡"
-        assert units["运算定律"]["planned"] is True
+        assert units["运算定律"]["planned"] is False and units["运算定律"]["levels"], "R3 起运算定律开放"
+        assert units["小数的意义和性质"]["planned"] is True, "未开放单元保持锁定"
         assert body["title"] == "新手航海员"
