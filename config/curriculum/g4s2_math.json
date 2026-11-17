@@ -549,9 +549,106 @@
       "id": "u4",
       "name": "小数的意义和性质",
       "order": 4,
-      "planned": true,
-      "levels": [],
-      "note": "对齐 m_dec_mean/m_dec_props/m_dec_compare/m_dec_shift(轮次 R3-R5 开放)"
+      "levels": [
+        {
+          "id": "m4-1",
+          "name": "小数的意义、性质与移动",
+          "topic": "m_dec_mean",
+          "questions": [
+            {
+              "id": "e11",
+              "tier": "basic",
+              "prompt": "把 1 米平均分成 10 份,1 份是多少米?",
+              "answer": 0.1,
+              "scaffold": "1 分米就是十分之一米,用小数写出来。"
+            },
+            {
+              "id": "e12",
+              "tier": "basic",
+              "prompt": "把 0.30 化简(去掉末尾多余的 0)。",
+              "answer": 0.3,
+              "scaffold": "小数的末尾添 0 或去 0,大小不变。"
+            },
+            {
+              "id": "e13",
+              "tier": "basic",
+              "prompt": "1 元 2 角,写成以元为单位的小数是多少元?",
+              "answer": 1.2,
+              "scaffold": "1 角是 0.1 元,2 角就是 2 个 0.1 元。"
+            },
+            {
+              "id": "e14",
+              "tier": "basic",
+              "prompt": "把 3.5 的小数点向右移动一位,是多少?",
+              "answer": 35,
+              "scaffold": "右移一位,扩大到原来的 10 倍。"
+            },
+            {
+              "id": "e15",
+              "tier": "standard",
+              "prompt": "0.8 和 0.75 中,较大的数是多少?",
+              "answer": 0.8,
+              "scaffold": "先比整数部分,再一位一位往下比:8 个 0.1 比 7 个 0.1 大。"
+            },
+            {
+              "id": "e16",
+              "tier": "standard",
+              "prompt": "十分之七,写成小数是多少?",
+              "answer": 0.7,
+              "scaffold": "分母是 10 的分数,小数点后只有一位。"
+            },
+            {
+              "id": "e17",
+              "tier": "standard",
+              "prompt": "0.5 米等于多少分米?",
+              "answer": 5,
+              "scaffold": "1 分米=0.1 米,0.5 米里有几个 0.1?"
+            },
+            {
+              "id": "e18",
+              "tier": "standard",
+              "prompt": "把 2.5 的小数点向左移动一位,是多少?",
+              "answer": 0.25,
+              "scaffold": "左移一位,缩小到原来的十分之一。"
+            },
+            {
+              "id": "e19",
+              "tier": "standard",
+              "prompt": "0.4 里面有 4 个 0.1,对不对?对就填 4,不对填 0。",
+              "answer": 4,
+              "scaffold": "一位小数表示几个十分之一。"
+            },
+            {
+              "id": "e1a",
+              "tier": "challenge",
+              "prompt": "十分之三,写成小数是多少?",
+              "answer": 0.3,
+              "scaffold": "分母是 10 的分数写成一位小数。"
+            },
+            {
+              "id": "e1b",
+              "tier": "challenge",
+              "prompt": "0.05 里面有多少个 0.01?",
+              "answer": 5,
+              "scaffold": "百分位上的数字是几,就有几个 0.01。"
+            },
+            {
+              "id": "e1c",
+              "tier": "challenge",
+              "prompt": "大于 0.6 且小于 0.8 的一位小数是多少?",
+              "answer": 0.7,
+              "scaffold": "一位小数只有 0.7 落在中间。"
+            },
+            {
+              "id": "e1d",
+              "tier": "challenge",
+              "prompt": "把 5.02 的小数点向右移动三位,是多少?",
+              "answer": 5020,
+              "scaffold": "右移三位,扩大 1000 倍——位数不够时用 0 补位。"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "u5",
