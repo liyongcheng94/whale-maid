@@ -403,6 +403,10 @@ async def chat(inp: ChatIn):
 MUSIC_DL_URL = os.environ.get("MUSIC_DL_URL", "http://127.0.0.1:8099/music")
 MUSIC_DL_DATA = os.environ.get("MUSIC_DL_DATA", os.path.join(
     os.environ.get("TEMP", "/tmp"), "wm_musicdl", "data", "downloads"))
+# 搜歌源:bilibili 无需凭证;配好网易云 Cookie 后在 .env 改 MUSIC_FETCH_SOURCES=netease,bilibili(歌词随网易云源可用)
+MUSIC_FETCH_SOURCES = os.environ.get("MUSIC_FETCH_SOURCES", "bilibili")
+LYRICS_DIR = MUSIC_DIR / "lyrics"
+LYRICS_DIR.mkdir(parents=True, exist_ok=True)
 SONG_FETCH_TIMEOUT = 120  # 秒
 
 _SONG_CARD_RE = re.compile(r'<li class="song-card"([^>]*)>')
@@ -447,7 +451,7 @@ async def music_fetch_api(inp: MusicFetchIn):
         raise HTTPException(400, "empty query")
     # 1) 搜索(bilibili 源,25s~420s 过滤试听片段与超长合集)
     html = (await client_get(f"{MUSIC_DL_URL}/search",
-                             params={"q": query, "sources": "bilibili", "page": "1"})).text
+                             params={"q": query, "sources": MUSIC_FETCH_SOURCES, "page": "1"})).text
     cards = []
     for attrs_html in _SONG_CARD_RE.findall(html):
         a = dict(_DATA_ATTR_RE.findall(attrs_html))
@@ -510,8 +514,22 @@ async def music_fetch_api(inp: MusicFetchIn):
     entry = _register_playlist(group, fname, song["name"], song.get("source", "bilibili"))
     PLAYLIST.clear()
     PLAYLIST.update(json.loads((CONFIG / "playlist.json").read_text(encoding="utf-8")))
-    print(f"[music] 点播入库: {query} -> {fname}")
-    return {"ok": True, "song": fname, "title": entry["title"]}
+    # 5) 歌词:music-dl /lyric 端点拉 LRC(bilibili 无词,netease/qq 源有;失败静默不阻塞)
+    lyric_saved = False
+    try:
+        lq = urllib.parse.urlencode({"id": song.get("id", ""), "source": song.get("source", ""),
+                                     "name": song.get("name", ""), "artist": song.get("artist", ""),
+                                     "album": song.get("album", ""), "duration": song.get("duration", 0),
+                                     "format": "line"})
+        lrc_body = (await client_get(f"{MUSIC_DL_URL}/lyric?{lq}")).text
+        if lrc_body.strip() and "纯音乐" not in lrc_body[:30] and len(lrc_body) > 60:
+            LYRICS_DIR.mkdir(parents=True, exist_ok=True)
+            (LYRICS_DIR / (os.path.splitext(fname)[0] + ".lrc")).write_text(lrc_body, encoding="utf-8")
+            lyric_saved = True
+    except Exception as e:
+        print(f"[music] 歌词获取失败(不阻塞): {e!r}")
+    print(f"[music] 点播入库: {query} -> {fname} (歌词: {lyric_saved})")
+    return {"ok": True, "song": fname, "title": entry["title"], "lyric": lyric_saved}
 
 
 async def client_get(url: str, params: dict):
@@ -546,6 +564,8 @@ if (PROJECT / "assets_audio" / "mp3").exists():
 # 歌单音频(assets_audio/music,go-music-dl 下载入库;缺失时跳过挂载,前端回落 TTS)
 if MUSIC_DIR.exists():
     app.mount("/music-audio", StaticFiles(directory=str(MUSIC_DIR)), name="music-audio")
+
+app.mount("/music-lyrics", StaticFiles(directory=str(LYRICS_DIR)), name="music-lyrics")
 
 
 @app.get("/api/history")

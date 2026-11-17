@@ -57,6 +57,12 @@
   #speech::after { content:""; position:absolute; left:50%; bottom:-10px;
     transform:translateX(-50%); border:10px solid transparent; border-top-color:#fff; border-bottom:0; }
   #whaleWrap { width:min(76vw,380px); position:relative; }
+  /* 滚动歌词面板(点播播放时显示;2026-11-17 歌词链路) */
+  #lrcPanel { position:absolute; inset:0; display:none; flex-direction:column; justify-content:center;
+              pointer-events:none; overflow:hidden; text-align:center; }
+  #lrcPanel .lrc-line { font-size:14px; color:rgba(255,255,255,.45); padding:3px 0;
+                        transition:color .3s, transform .3s, font-size .3s; line-height:1.5; }
+  #lrcPanel .lrc-line.on { color:#fff; font-size:17px; font-weight:600; transform:scale(1.05); }
   #whaleImg { width:100%; height:auto; display:block; filter:drop-shadow(0 8px 16px rgba(8,26,70,.35)); }
   #hint { color:#bfe4ff; font-size:14px; opacity:.85; }
 
@@ -164,6 +170,7 @@
       </div>
       <div class="hot head" data-pool="touch_head" data-anim="wiggle"></div>
       <div class="hot belly" data-pool="touch_belly" data-anim="squash"></div>
+      <div id="lrcPanel"></div>
     </div>
     <div id="hint">摸摸我的头和肚肚试试 · 按住 🎤 说话</div>
   </div>
@@ -283,7 +290,7 @@ $("fs").addEventListener("click", () => {
   } catch (_) {}
 });
 
-function stopAudioOnly() {
+function stopAudioOnly() { hideLrc();
   if (curAudio) { curAudio.pause(); curAudio = null; }
   try { speechSynthesis.cancel(); } catch (_) {}
 }
@@ -404,6 +411,34 @@ function poke() {
   }, IDLE_MS);
 }
 
+/* ---- 滚动歌词(LRC;netease 源点播带词,bilibili 源无词不显示) ---- */
+let lrcTimer = null, lrcLines = [];
+function hideLrc() { lrcPanel.style.display = "none"; lrcPanel.innerHTML = ""; lrcLines = [];
+                     if (lrcTimer && curAudio) curAudio.ontimeupdate = null; clearInterval(lrcTimer); lrcTimer = null; }
+function showLrcFor(songFile) {
+  hideLrc();
+  fetch("/music-lyrics/" + songFile.replace(/\.m4a$/, ".lrc")).then(r => r.ok ? r.text() : Promise.reject())
+    .then(text => {
+      lrcLines = [...text.matchAll(/\[(\d+):(\d+)(?:[.:](\d+))?\]\s*([^\n]+)/g)]
+        .map(m => ({ t: (+m[1]) * 60 + (+m[2]) + (m[3] ? +(("0." + m[3])) : 0), line: m[4].trim() }))
+        .filter(x => x.line);
+      if (!lrcLines.length) return;
+      lrcPanel.innerHTML = lrcLines.map(() => '<div class="lrc-line"></div>').join("");
+      const els = lrcPanel.querySelectorAll(".lrc-line");
+      lrcPanel.style.display = "flex";
+      const sync = () => {
+        if (!curAudio) return;
+        const now = curAudio.currentTime;
+        let idx = lrcLines.findIndex((x, i) => now >= x.t && (i === lrcLines.length - 1 || now < lrcLines[i + 1].t));
+        els.forEach((el, i) => el.classList.toggle("on", i === idx));
+        const on = els[idx];
+        if (on) on.scrollIntoView({ block: "center", behavior: "smooth" });
+      };
+      lrcTimer = setInterval(sync, 300);
+      sync();
+    }).catch(() => {});
+}
+
 /* ---- 歌单播放:引子(sing 池预生成音频)→ 接力播真实歌曲(2026-11-17 唱歌升级) ---- */
 function waitAudioDone(timeoutMs) {
   return new Promise(res => {
@@ -426,7 +461,8 @@ async function playIntroThenSong(pre, file, title) {
   bubble("♪ 正在播放《" + title + "》", 8000);
   setEmo("happy");
   animTrigger("wiggle");
-  if (!(await playUrl("/music-audio/" + file))) await speak("♪ " + title, "happy"); // 404 回落 TTS
+  if (await playUrl("/music-audio/" + file)) { showLrcFor(file); }
+  else await speak("♪ " + title, "happy"); // 404 回落 TTS
 }
 
 /* ---- 对话:DeepSeek(后端,多轮记忆)→ 离线兜底(直连预生成音频) ---- */
@@ -458,10 +494,10 @@ async function chat(text) {
         });
         if (fr.ok) {
           const fd = await fr.json();
-          bubble("♪ 正在播放《" + fd.title + "》", 8000);
+          bubble("♪ 正在播放《" + fd.title + "》" + (fd.lyric ? " 📜" : ""), 8000);
           setEmo("happy");
           animTrigger("wiggle");
-          await playUrl("/music-audio/" + fd.song);
+          if (await playUrl("/music-audio/" + fd.song)) showLrcFor(fd.song);
         } else {
           bubble("呜……这首歌太难捞了,换一首好不好?", 6000);
         }

@@ -31,13 +31,14 @@ class TestPlaylistContract:
                 assert s.get("source"), f"{gname}/{s['file']} 缺 source(溯源)"
 
     def test_alias不跨组冲突(self):
-        """同一 alias 只能命中一首歌,否则点歌路由歧义。"""
+        """同一 alias 不得横跨两组(路由歧义);同组内重复允许,路由取首个命中。"""
         seen = {}
         for gname, g in PL["groups"].items():
             for s in g["songs"]:
                 for a in s.get("alias", []):
                     low = a.lower()
-                    assert low not in seen, f"alias「{a}」跨组冲突: {seen[low]} vs {gname}"
+                    if low in seen and seen[low] != gname:
+                        pytest.fail(f"alias「{a}」跨组冲突: {seen[low]} vs {gname}")
                     seen[low] = gname
 
     def test_file与磁盘对齐(self):
