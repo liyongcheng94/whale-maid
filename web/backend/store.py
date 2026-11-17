@@ -39,11 +39,26 @@ def default_learn(child_id: str) -> dict:
             "sessions": [], "adjust_log": [], "daily_done": {}, "first_seen": time.strftime("%Y-%m-%d")}
 
 
+def _migrate(data: dict) -> dict:
+    """R10 结构性改动:学习档案 schema v1 → v2(补齐徽章/调整日志/每日标记等正式字段)。
+    迁移幂等:已 v2 的档案原样返回。"""
+    if data.get("v") == 2:
+        return data
+    data.setdefault("v", 2)
+    data.setdefault("badges", [])
+    data.setdefault("adjust_log", [])
+    data.setdefault("daily_done", {})
+    data.setdefault("topic_state", {})
+    data.setdefault("levels", {})
+    data.setdefault("first_seen", time.strftime("%Y-%m-%d"))
+    return data
+
+
 def load_learn(child_id: str) -> dict:
     data = load_json(learn_path(child_id), None)
     if not isinstance(data, dict) or "xp" not in data:
         data = default_learn(child_id)
-    return data
+    return _migrate(data)
 
 
 def save_learn(child_id: str, data: dict) -> None:
