@@ -274,12 +274,26 @@ async def learn_answer(inp: AnswerIn):
 
 @router.get("/learn/daily")
 async def learn_daily(child: str = Query(...)):
-    """每日挑战:按日期+child 种子选 3 题(可复现,自动修复 QuizCraft 可无限刷 2x 的缺陷)。"""
+    """每日挑战:按日期+child 种子选 3 题(可复现,修复 QuizCraft 可无限刷 2x 的缺陷)。
+    R5:近期错题优先掺入 1 题——复习曲线优先于纯随机。"""
     today = time.strftime("%Y-%m-%d")
-    rng = random.Random(f"daily-{child}-{today}")
-    picked = rng.sample(sorted(_ALL_Q.keys()), 3)
     learn = store.load_learn(child)
+    wrong_recent, seen_wrong = [], set()
+    for s in reversed(learn.get("sessions", [])):
+        if not s.get("correct") and s.get("qid") not in seen_wrong:
+            seen_wrong.add(s.get("qid"))
+            wrong_recent.append(s["qid"])
+        if len(wrong_recent) >= 3:
+            break
+    rng = random.Random(f"daily-{child}-{today}")
+    pool = sorted(_ALL_Q.keys())
+    picked = []
+    if wrong_recent:
+        picked.append(rng.choice(wrong_recent))
+    picked += [q for q in rng.sample(pool, 3) if q not in picked][:3 - len(picked)]
+    picked = picked[:3]
     return {"date": today, "done": bool(learn.get("daily_done", {}).get(today)),
+            "review": bool(wrong_recent) and picked[0] in wrong_recent,
             "questions": [_question_payload(_ALL_Q[qid], _ALL_Q[qid]["tier"]) for qid in picked]}
 
 
