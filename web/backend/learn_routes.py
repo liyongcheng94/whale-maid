@@ -383,6 +383,23 @@ class PinIn(BaseModel):
     pin: str
 
 
+@router.get("/learn/wrongbook")
+async def wrongbook(child: str = Query(...)):
+    """R29 错题本:近期做错的题去重列表(按最后错误时间倒序,最多 20 题)。"""
+    learn = store.load_learn(child)
+    wrongs, seen = [], set()
+    for s in reversed(learn.get("sessions", [])):
+        qid = s.get("qid")
+        if s.get("correct") is False and qid not in seen and qid in _ALL_Q:
+            seen.add(qid)
+            q = _ALL_Q[qid]
+            wrongs.append({"qid": qid, "prompt": q["prompt"], "tier": q["tier"],
+                           "scaffold": q.get("scaffold"), "ts": s.get("ts", "")[:10]})
+        if len(wrongs) >= 20:
+            break
+    return {"child": child, "items": list(reversed(wrongs))}
+
+
 @router.get("/parent/status")
 async def parent_status():
     auth = store.parent_auth()
@@ -482,6 +499,7 @@ async def parent_overview(token: str = Query("")):
             "child": c["id"], "name": c["name"], "age": c["age"], "locked": c.get("locked", False),
             "xp": learn.get("xp", 0), "title": _title_for(learn.get("xp", 0)),
             "week_minutes": minutes, "prev_week_minutes": prev_minutes,
+            "week_accuracy": round(sum(1 for s in week if s.get("correct")) / len(week), 2) if week else None,
             "last_days_ago": last_days if last_days < 999 else None,
             "streak_days": streak, "week_answers": len(week),
             "activity_7d": _activity_7d(sessions),
