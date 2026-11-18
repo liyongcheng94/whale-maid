@@ -408,6 +408,36 @@ async def learn_current(inp: CurrentIn):
     return {"ok": True}
 
 
+@router.get("/learn/tree")
+async def learn_tree(child: str = Query(...)):
+    """R46 技能树:四下知识图谱节点 → 孩子的掌握状态(探索中/已掌握/未解锁)。
+    掌握判定:该话题近 7 天 ≥5 题且正确率 ≥80% → mastered;有过作答 → learning;否则 locked。"""
+    learn = store.load_learn(child)
+    acc = _topic_accuracy([s for s in learn.get("sessions", []) if _within_days(s.get("ts", ""), 7)])
+    all_time = _topic_accuracy(learn.get("sessions", []))
+    skills = []
+    for t in KG["topics"]:
+        if t.get("grade", 0) > 4:
+            continue  # 只呈现小学阶段(≤4 年级)节点
+        n7, a7 = acc.get(t["id"], (0, 0))
+        nall, aall = all_time.get(t["id"], (0, 0))
+        tier = learn.get("topic_state", {}).get(t["id"], {}).get("tier")
+        if n7 >= 5 and a7 >= 0.8:
+            status = "mastered"
+        elif nall > 0:
+            status = "learning"
+        else:
+            status = "locked"
+        skills.append({"id": t["id"], "name": t["name"], "chapter": t.get("chapter", ""),
+                       "domain": t.get("domain", ""), "grade": t.get("grade"),
+                       "status": status, "tier": tier,
+                       "week_count": n7, "week_accuracy": round(a7, 2) if n7 else None})
+    order = {"mastered": 0, "learning": 1, "locked": 2}
+    skills.sort(key=lambda s: (order[s["status"]], s["id"]))
+    return {"child": child, "skills": skills,
+            "mastered_count": sum(1 for s in skills if s["status"] == "mastered")}
+
+
 @router.get("/learn/wrongbook")
 async def wrongbook(child: str = Query(...)):
     """R29 错题本:近期做错的题去重列表(按最后错误时间倒序,最多 20 题)。"""

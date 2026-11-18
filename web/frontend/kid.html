@@ -101,6 +101,9 @@
       <button class="go" id="dailyGo">开始今天的挑战</button>
     </div>
     <div class="card">
+      <h3>🌳 技能树 · 掌握状态</h3>
+      <div id="tree" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div style="height:12px"></div>
       <h3>课外馆 · 玩中学</h3>
       <div class="games" style="margin-bottom:10px">
         <button class="g" id="wrongbookBtn" style="flex:1 1 100%">📕 错题本(点开重做错过的题)</button>
@@ -195,6 +198,22 @@ fetch("/api/profiles").then(r => r.json()).then(({ children }) => {
   if (me) { $("whoName").textContent = me.name; $("whoAvatar").textContent = me.avatar === "whale" ? "🐋" : "🐟"; }
 }).catch(() => {});
 
+/* R46 技能树 */
+async function loadTree() {
+  const tree = $("tree");
+  try {
+    const d = await (await fetch("/api/learn/tree?child=" + encodeURIComponent(CHILD))).json();
+    const dot = { mastered: "🟢", learning: "🟡", locked: "⚪" };
+    const label = { mastered: "已掌握", learning: "探索中", locked: "未解锁" };
+    tree.innerHTML = d.skills.map(s =>
+      `<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px">
+        <span>${dot[s.status]}</span>
+        <span style="flex:1;font-size:15px">${s.name}</span>
+        <span style="font-size:12px;color:#9fc6e8">${label[s.status]}${s.week_count ? " · 7 天 " + s.week_count + " 题" : ""}</span>
+      </div>`).join("");
+  } catch (_) { tree.innerHTML = '<div style="opacity:.6;font-size:13px">技能树加载失败</div>'; }
+}
+
 /* 课程地图 */
 async function loadMap() {
   const m = await (await fetch("/api/learn/map?child=" + encodeURIComponent(CHILD))).json();
@@ -226,7 +245,7 @@ async function loadMap() {
     $("dailyGo").disabled = d.done;
   }).catch(() => {});
 }
-loadMap();
+loadMap(); loadTree();
 
 /* 关卡玩法(自适应) */
 async function startLevel(levelId, levelName) {
@@ -309,7 +328,7 @@ function showSummary(r) {
     <button class="done-btn" onclick="closeOverlay()">回地图</button>`;
   $("play").style.display = "none";
   $("home").style.display = "block";
-  loadMap();
+  loadMap(); loadTree();
 }
 function closeOverlay() { $("overlay").style.display = "none"; }
 
