@@ -267,7 +267,8 @@ async function loadMap() {
       const locked = u.unlocked === false && !u.planned;
       b.className = "lvl" + (l.done ? " done" : "") + (locked ? " planned" : "");
       const wrongNote = l.wrong ? ` · 错过 ${l.wrong} 次` : "";
-      b.innerHTML = `<div class="lv-name">${l.name}</div><div class="lv-status">${l.done ? "已通关 · 最佳连对 " + l.best + wrongNote : l.count + " 题 · 可挑战" + wrongNote}</div>`;
+      const starNote = l.stars ? "⭐".repeat(l.stars) : "";
+      b.innerHTML = `<div class="lv-name">${l.name}</div><div class="lv-status">${l.done ? (starNote + " · 最佳连对 " + l.best + wrongNote) : l.count + " 题 · 可挑战" + wrongNote}</div>`;
       if (!locked) b.addEventListener("click", () => startLevel(l.id, l.name));
       lv.appendChild(b);
     });
@@ -362,10 +363,12 @@ async function submitAnswer() {
 }
 function showSummary(r) {
   const s = r.summary || {};
+  const starLine = r.stars ? `<p>${"⭐".repeat(r.stars)}(${r.stars} 星)</p>` : "";
   const badgeLine = (r.badges && r.badges.length)
     ? `<p>🏅 研究笔记:你解锁了「${r.badges.join("」「")}」</p>` : "";
   $("overlay").style.display = "flex";
   $("overlayBody").innerHTML = `<h2>本关完成 ✓</h2>
+    ${starLine}
     <p>最佳连对:${s.streak ?? 0}</p>
     <p>当前称号:${s.title ?? "–"}</p>
     ${badgeLine}
