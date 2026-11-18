@@ -23,8 +23,8 @@ router = APIRouter(prefix="/api")
 CURRICULUM_DIR = Path(__file__).resolve().parent.parent.parent / "config" / "curriculum"
 CURRICULUM = json.loads((CURRICULUM_DIR / "g4s2_math.json").read_text(encoding="utf-8"))
 KG = json.loads((CURRICULUM_DIR / "knowledge_graph.json").read_text(encoding="utf-8"))
-PROFILES = json.loads((Path(__file__).resolve().parent.parent.parent / "config" / "profiles.json")
-                      .read_text(encoding="utf-8"))
+PROFILES_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "profiles.json"
+PROFILES = json.loads(PROFILES_PATH.read_text(encoding="utf-8"))
 
 TIERS = ["basic", "standard", "challenge"]
 TIER_CN = {"basic": "基础", "standard": "标准", "challenge": "挑战"}
@@ -549,6 +549,28 @@ async def parent_report(child: str = Query(...), token: str = Query(""), days: i
         "records": sessions[-200:],
     }
     return JSONResponse(report, headers={"Content-Disposition": f"attachment; filename=report_{child}_{days}d.json"})
+
+
+class RenameIn(BaseModel):
+    child_id: str
+    name: str
+
+
+@router.put("/parent/profile")
+async def rename_profile(inp: RenameIn, token: str = Query("")):
+    """R44 家长重命名孩子档案(档案文件为入库配置,改名后随提交固化)。"""
+    _require_parent(token)
+    name = inp.name.strip()[:12]
+    if not 1 <= len(name):
+        raise HTTPException(400, "名字不能为空")
+    prof_path = PROFILES_PATH
+    prof = json.loads(prof_path.read_text(encoding="utf-8"))
+    target = next((c for c in prof["children"] if c["id"] == inp.child_id), None)
+    if not target:
+        raise HTTPException(404, "unknown child")
+    target["name"] = name
+    prof_path.write_text(json.dumps(prof, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"ok": True, "name": name}
 
 
 @router.get("/parent/overview")

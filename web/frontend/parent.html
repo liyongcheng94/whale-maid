@@ -7,6 +7,15 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
+  @media (max-width:620px) {
+    body { padding:12px; font-size:15px; }
+    header h1 { font-size:18px; }
+    .grid { grid-template-columns:1fr; }
+    .ccard { padding:14px; }
+    .ccard .row { flex-wrap:wrap; gap:8px; }
+    .ccard .stat { min-width:calc(50% - 8px); }
+    .bars .b span { display:none; }
+  }
   body { min-height:100vh; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
     background:#f2f6fa; color:#1c3a52; padding:20px; font-size:16px; }
   header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
@@ -153,7 +162,8 @@ async function showDash(tok) {
         <div class="bars">${bars}</div>
         <div class="desc">${c.summary}</div>
         ${c.pending.length ? `<div class="warn">待处理:${c.pending.join(";")}</div>` : ""}
-        <div class="acts2"><button data-preview="${c.child}">只读预览孩子视图</button>
+        <div class="acts2"><button data-rename="${c.child}" data-old="${c.name}">✏️ 改名</button>
+          <button data-preview="${c.child}">只读预览孩子视图</button>
           <button data-report="${c.child}">📄 下载学习报告</button>
           <button data-listen="${c.child}">🎧 伴听模式</button>
           <button onclick="window.open('sub.html?child=${c.child}','_blank')">📱 副屏</button></div>`;
@@ -168,6 +178,16 @@ async function showDash(tok) {
       const a = document.createElement("a");
       a.href = url; a.download = `report_${b.dataset.report}_7d.json`;
       a.click();
+    }));
+  cards.querySelectorAll("[data-rename]").forEach(b =>
+    b.addEventListener("click", async () => {
+      const name = prompt("新名字(1~12 字):", b.dataset.old);
+      if (!name || name.trim() === b.dataset.old) return;
+      const r = await fetch(`/api/parent/profile?token=${encodeURIComponent(token)}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ child_id: b.dataset.rename, name: name.trim() })
+      });
+      if (r.ok) showDash(token); else alert((await r.json().catch(() => ({}))).detail || "改名失败");
     }));
   const feed = $("adjFeed");
   feed.innerHTML = ov.adjust_feed.length
