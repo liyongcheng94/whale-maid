@@ -490,6 +490,18 @@ async def learn_tree(child: str = Query(...)):
             "mastered_count": sum(1 for s in skills if s["status"] == "mastered")}
 
 
+WORDS = json.loads((CONFIG / "words.json").read_text(encoding="utf-8"))["words"]
+
+
+@router.get("/learn/words/daily")
+async def words_daily(child: str = Query(...)):
+    """R61 英语角:按日期+child 种子选 3 词(可复现);音频三件套 word_{w}_en/zh/sent 预生成。"""
+    today = time.strftime("%Y-%m-%d")
+    rng = random.Random(f"words-{child}-{today}")
+    picked = rng.sample(WORDS, 3)
+    return {"date": today, "words": picked}
+
+
 @router.get("/learn/wrongbook")
 async def wrongbook(child: str = Query(...)):
     """R29 错题本:近期做错的题去重列表(按最后错误时间倒序,最多 20 题)。"""

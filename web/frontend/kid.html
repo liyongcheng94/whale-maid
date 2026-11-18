@@ -117,14 +117,7 @@
         <button class="g" data-say="我们来背古诗吧">📜 诗词画廊</button>
         <button class="g" data-say="我们来猜谜语吧">🧩 解谜工坊</button>
         <button class="g" data-say="我们来玩猜动物游戏">🐾 特性研究所</button>
-        <button class="g" data-say="随便来首歌听">🎵 音乐角</button>
-        <button class="g" data-say="今天天气怎么样">🌤 天气台</button>
-      </div>
-      <div class="games">
-        <button class="g" data-say="我们来玩数学游戏吧">🔢 速算擂台</button>
-        <button class="g" data-say="我们来背古诗吧">📜 诗词画廊</button>
-        <button class="g" data-say="我们来猜谜语吧">🧩 解谜工坊</button>
-        <button class="g" data-say="我们来玩猜动物游戏">🐾 特性研究所</button>
+        <button class="g" id="englishBtn">🔤 英语角</button>
         <button class="g" data-say="随便来首歌听">🎵 音乐角</button>
         <button class="g" data-say="今天天气怎么样">🌤 天气台</button>
       </div>
@@ -220,6 +213,22 @@ async function loadAchv() {
     el.innerHTML = rows.join("");
   } catch (_) { el.innerHTML = '<div style="opacity:.6;font-size:13px">成就墙加载失败</div>'; }
 }
+
+/* R61/R62 英语角:每日 3 词,EN 童声三件套 */
+$("englishBtn").addEventListener("click", async () => {
+  pokeOff();
+  try {
+    const d = await (await fetch("/api/learn/words/daily?child=" + encodeURIComponent(CHILD))).json();
+    for (const w of d.words) {
+      bubble(`🔤 ${w.word} = ${w.zh}`, 20000);
+      setEmoSafe("normal");
+      if (!(await playUrl(`/egg-audio/word_${w.word}_en.mp3`))) await speak(w.word);
+      if (!(await playUrl(`/egg-audio/word_${w.word}_zh.mp3`))) await speak(w.zh);
+      if (!(await playUrl(`/egg-audio/word_${w.word}_sent.mp3`))) await speak(w.sentence);
+    }
+    bubble("今天的单词学完啦!明天来新的哦。");
+  } catch (_) { bubble("英语角被海浪挡了一下,再试一次。"); }
+});
 
 /* R46 技能树 */
 async function loadTree() {
