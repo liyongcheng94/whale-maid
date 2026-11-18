@@ -527,6 +527,30 @@ async def parent_check(token: str = Query("")):
     return {"ok": True}
 
 
+@router.get("/parent/report")
+async def parent_report(child: str = Query(...), token: str = Query(""), days: int = Query(7)):
+    """R41 学习报告 JSON 导出(家长下载留档):概要+逐题记录+调整理由。"""
+    _require_parent(token)
+    learn = store.load_learn(child)
+    prof = next((c for c in PROFILES["children"] if c["id"] == child), {})
+    sessions = [s for s in learn.get("sessions", []) if _within_days(s.get("ts", ""), days)]
+    acc = _topic_accuracy(sessions)
+    report = {
+        "child": child, "name": prof.get("name", child), "days": days,
+        "generated": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "xp": learn.get("xp", 0), "title": _title_for(learn.get("xp", 0)),
+        "badges": learn.get("badges", []),
+        "streak_days": _streak_days({s.get("ts", "")[:10] for s in sessions}),
+        "minutes": round(sum(s.get("time_s", 0) for s in sessions) / 60, 1),
+        "answers": len(sessions),
+        "accuracy": round(sum(1 for s in sessions if s.get("correct")) / len(sessions), 2) if sessions else None,
+        "by_topic": {_topic_name(t): {"count": n, "accuracy": round(a, 2)} for t, (n, a) in acc.items()},
+        "adjust_log": learn.get("adjust_log", [])[-20:],
+        "records": sessions[-200:],
+    }
+    return JSONResponse(report, headers={"Content-Disposition": f"attachment; filename=report_{child}_{days}d.json"})
+
+
 @router.get("/parent/overview")
 async def parent_overview(token: str = Query("")):
     """控制室总览:每孩子卡片(本周节奏/连续天数/强项待支持/待处理事项)+调整理由 feed。"""
