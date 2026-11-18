@@ -186,7 +186,8 @@ def _title_for(xp: int):
 
 
 @router.get("/learn/next")
-async def learn_next(child: str = Query(...), level: str = Query(...), session: str = Query(...)):
+async def learn_next(child: str = Query(...), level: str = Query(...), session: str = Query(...),
+                     force_qid: str = Query(None)):
     """自适应出题:按孩子-话题的档位状态选题;session 内存会话计数。"""
     learn = store.load_learn(child)
     lv = next((l for u in CURRICULUM["units"] for l in u.get("levels", []) if l["id"] == level), None)
@@ -200,10 +201,16 @@ async def learn_next(child: str = Query(...), level: str = Query(...), session: 
     sess = LEARN_SESSIONS.setdefault(key, {"level": level, "seen": [], "count": 0,
                                            "streak": 0, "results": [], "attempts": {}, "daily": False})
     seen = set(sess["seen"])
-    q = _pick_question(tier, lv["topic"], seen)
-    if q is None:
-        raise HTTPException(503, "题库已用完")
-    sess["seen"].append(q["id"])
+    # R30 错题本重做:force_qid 指定具体题目(错题本入口)
+    if force_qid and force_qid in _ALL_Q and _ALL_Q[force_qid]["level"] == level:
+        q = _ALL_Q[force_qid]
+        if q["id"] not in seen:
+            sess["seen"].append(q["id"])
+    else:
+        q = _pick_question(tier, lv["topic"], seen)
+        if q is None:
+            raise HTTPException(503, "题库已用完")
+        sess["seen"].append(q["id"])
     return {"session": session, "child": child, "level": level, "count": sess["count"],
             "total": MATH_ROUNDS, "tier": tier, **_question_payload(q, tier)}
 
@@ -393,7 +400,7 @@ async def wrongbook(child: str = Query(...)):
         if s.get("correct") is False and qid not in seen and qid in _ALL_Q:
             seen.add(qid)
             q = _ALL_Q[qid]
-            wrongs.append({"qid": qid, "prompt": q["prompt"], "tier": q["tier"],
+            wrongs.append({"qid": qid, "prompt": q["prompt"], "tier": q["tier"], "level": q["level"],
                            "scaffold": q.get("scaffold"), "ts": s.get("ts", "")[:10]})
         if len(wrongs) >= 20:
             break

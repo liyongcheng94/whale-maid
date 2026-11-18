@@ -102,6 +102,18 @@
     </div>
     <div class="card">
       <h3>课外馆 · 玩中学</h3>
+      <div class="games" style="margin-bottom:10px">
+        <button class="g" id="wrongbookBtn" style="flex:1 1 100%">📕 错题本(点开重做错过的题)</button>
+      </div>
+      <div id="wrongbook" style="display:none"></div>
+      <div class="games">
+        <button class="g" data-say="我们来玩数学游戏吧">🔢 速算擂台</button>
+        <button class="g" data-say="我们来背古诗吧">📜 诗词画廊</button>
+        <button class="g" data-say="我们来猜谜语吧">🧩 解谜工坊</button>
+        <button class="g" data-say="我们来玩猜动物游戏">🐾 特性研究所</button>
+        <button class="g" data-say="随便来首歌听">🎵 音乐角</button>
+        <button class="g" data-say="今天天气怎么样">🌤 天气台</button>
+      </div>
       <div class="games">
         <button class="g" data-say="我们来玩数学游戏吧">🔢 速算擂台</button>
         <button class="g" data-say="我们来背古诗吧">📜 诗词画廊</button>
@@ -370,6 +382,39 @@ function pokeOff() {}
 /* R20 边界:断网/恢复提示 */
 window.addEventListener("offline", () => bubble("网络断了——别担心,你的进度已经保存。"));
 window.addEventListener("online", () => { bubble("网络回来啦,继续!"); loadMap(); });
+
+/* R30 错题本:列出近期错题,点题重做(force_qid 通道) */
+$("wrongbookBtn").addEventListener("click", async () => {
+  const box = $("wrongbook");
+  if (box.style.display === "block") { box.style.display = "none"; return; }
+  box.style.display = "block";
+  box.innerHTML = '<div style="opacity:.7;font-size:14px">加载中…</div>';
+  try {
+    const d = await (await fetch("/api/learn/wrongbook?child=" + encodeURIComponent(CHILD))).json();
+    box.innerHTML = d.items.length
+      ? d.items.map(i => `<div class="card" style="margin:8px 0;cursor:pointer" data-qid="${i.qid}" data-prompt="${i.prompt}" data-level="${i.level}">
+            <b>【${i.tier === "basic" ? "基础" : i.tier === "standard" ? "标准" : "挑战"}】</b>${i.prompt}
+            <div style="font-size:12px;color:#9fc6e8">${i.ts} · 点我重做</div></div>`).join("")
+      : '<div style="opacity:.7;font-size:14px">错题本空空如也,太厉害了!</div>';
+    box.querySelectorAll("[data-qid]").forEach(el =>
+      el.addEventListener("click", () => redoWrong(el.dataset.qid, el.dataset.prompt, el.dataset.level)));
+  } catch (_) { box.innerHTML = '<div style="opacity:.7;font-size:14px">加载失败,稍后再试。</div>'; }
+});
+async function redoWrong(qid, prompt, level) {
+  curLevel = level;
+  curSession = "wb-" + Date.now();
+  $("home").style.display = "none";
+  $("play").style.display = "block";
+  $("progress").textContent = " · 错题重做";
+  $("qPrompt").textContent = prompt;
+  $("qTier").textContent = "错题重做";
+  $("answer").value = ""; $("feedback").textContent = ""; $("feedback").className = "";
+  $("scaffold").style.display = "none";
+  $("submit").disabled = false;
+  $("answer").focus();
+  await (await fetch(`/api/learn/next?child=${encodeURIComponent(CHILD)}&level=${curLevel}&session=${curSession}&force_qid=${qid}`)).json();
+  curQid = qid;
+}
 </script>
 </body>
 </html>
