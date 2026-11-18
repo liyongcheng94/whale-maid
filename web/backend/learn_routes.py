@@ -490,7 +490,7 @@ async def learn_tree(child: str = Query(...)):
             "mastered_count": sum(1 for s in skills if s["status"] == "mastered")}
 
 
-WORDS = json.loads((CONFIG / "words.json").read_text(encoding="utf-8"))["words"]
+WORDS = json.loads((CURRICULUM_DIR.parent / "words.json").read_text(encoding="utf-8"))["words"]
 
 
 @router.get("/learn/words/daily")
