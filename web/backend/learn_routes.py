@@ -12,11 +12,19 @@ import re
 import time
 from pathlib import Path
 
+import os
+
 import httpx  # noqa: F401  (保持与 main 同一依赖面)
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 import store
+
+# DeepSeek 常量与 main.py 各自独立(避免循环导入);.env 已由 main/_load_dotenv 之外在此同样读取
+DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash")
+DEEPSEEK_THINKING = {"type": "disabled"}
+DEEPSEEK_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 
 router = APIRouter(prefix="/api")
 
@@ -45,6 +53,28 @@ for _u in CURRICULUM["units"]:
 def _topic_name(topic_id):
     t = next((x for x in KG["topics"] if x["id"] == topic_id), None)
     return t["name"] if t else topic_id
+
+
+async def _llm_explain(q, user_answer):
+    """R105 学而思对标:第二次答错时,用 DeepSeek 生成个性化讲解(错在哪+下一步怎么想,≤120 字)。
+    失败/无 key 返回 None(前端回落静态中间步提示)。"""
+    if not DEEPSEEK_KEY:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=12) as client:
+            r = await client.post(
+                DEEPSEEK_URL,
+                headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
+                json={"model": DEEPSEEK_MODEL, "thinking": DEEPSEEK_THINKING,
+                      "max_tokens": 80, "temperature": 0.5,
+                      "messages": [
+                          {"role": "system", "content": "你是小学四年级数学辅导老师。学生答错了一道题。请用 1~2 句话指出他可能错在哪一步、下一步该怎么想。语气平等友善,不直接给数字答案。"},
+                          {"role": "user", "content": f"题目:{q['prompt']}\n学生的答案:{user_answer}\n请给出针对他错因的讲解。"}]})
+            r.raise_for_status()
+            return (r.json()["choices"][0]["message"]["content"] or "").strip()[:120] or None
+    except Exception as e:
+        print(f"[learn] llm explain 失败: {e!r}")
+        return None
 
 
 def _prereq_hint(topic: str):
@@ -402,10 +432,13 @@ async def learn_answer(inp: AnswerIn):
         store.save_learn(inp.child, learn)
         return out
     if attempts[inp.qid] == 2:
-        # R6 第二次错:更具体的中间步提示(仍不给答案),同题再试一次
+        # R6 第二次错:个性化讲解(R105 学而思对标,有 key 用 LLM;仍不给答案),同题再试一次
         out["retry"] = True
         sess["wrong_events"] = sess.get("wrong_events", 0) + 1
         out["step_hint"] = q.get("step_hint") or "把题目里的数字圈出来,一步一步写在草稿纸上,再回头对照上面的提示。"
+        explain = await _llm_explain(q, inp.answer)
+        if explain:
+            out["explain"] = explain
         store.save_learn(inp.child, learn)
         return out
 
