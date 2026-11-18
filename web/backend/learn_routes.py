@@ -454,20 +454,27 @@ async def learn_daily(child: str = Query(...)):
     R5:近期错题优先掺入 1 题——复习曲线优先于纯随机。"""
     today = time.strftime("%Y-%m-%d")
     learn = store.load_learn(child)
-    wrong_recent, seen_wrong = [], set()
+    # R107 SRS:构建每题最后状态(最新→最旧扫描)
+    last_event = {}
     for s in reversed(learn.get("sessions", [])):
-        if not s.get("correct") and s.get("qid") not in seen_wrong:
-            seen_wrong.add(s.get("qid"))
-            wrong_recent.append(s["qid"])
-        if len(wrong_recent) >= 3:
-            break
+        qid = s.get("qid")
+        if qid and qid not in last_event and qid in _ALL_Q:
+            last_event[qid] = {"correct": bool(s.get("correct")), "days": _days_ago(s.get("ts", ""))}
+    wrong_recent = [qid for qid, ev in last_event.items() if not ev["correct"]]
+    # SRS 衰减复习:已答对但超过 3 天没再练的题(最多掺 1 题,巩固记忆曲线)
+    decay = [qid for qid, ev in last_event.items()
+             if ev["correct"] and ev["days"] >= 3]
     rng = random.Random(f"daily-{child}-{today}-xp{learn.get('xp', 0)}")
     pool = sorted(_ALL_Q.keys())
     picked = []
     if wrong_recent:
-        picked.append(rng.choice(wrong_recent))
+        picked.append(rng.choice(wrong_recent))       # 错题优先位(次日必复习)
+    if decay:
+        d_pick = rng.choice(sorted(decay))
+        if d_pick not in picked:
+            picked.append(d_pick)                      # SRS 衰减位
     picked += [q for q in rng.sample(pool, 4) if q not in picked][:4 - len(picked)]
-    picked = picked[:4]  # R34: 3→4 题(1 错题复习 + 3 新题)
+    picked = picked[:4]
     return {"date": today, "done": bool(learn.get("daily_done", {}).get(today)),
             "review": bool(wrong_recent) and picked[0] in wrong_recent,
             "questions": [_question_payload(_ALL_Q[qid], _ALL_Q[qid]["tier"]) for qid in picked]}
