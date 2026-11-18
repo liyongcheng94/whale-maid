@@ -104,6 +104,9 @@
       <h3>🌳 技能树 · 掌握状态</h3>
       <div id="tree" style="display:flex;flex-direction:column;gap:8px"></div>
       <div style="height:12px"></div>
+      <h3>🏅 成就墙</h3>
+      <div id="achv" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div style="height:12px"></div>
       <h3>课外馆 · 玩中学</h3>
       <div class="games" style="margin-bottom:10px">
         <button class="g" id="wrongbookBtn" style="flex:1 1 100%">📕 错题本(点开重做错过的题)</button>
@@ -198,6 +201,24 @@ fetch("/api/profiles").then(r => r.json()).then(({ children }) => {
   if (me) { $("whoName").textContent = me.name; $("whoAvatar").textContent = me.avatar === "whale" ? "🐋" : "🐟"; }
 }).catch(() => {});
 
+/* R54 成就墙 */
+async function loadAchv() {
+  const el = $("achv");
+  try {
+    const d = await (await fetch("/api/learn/achievements?child=" + encodeURIComponent(CHILD))).json();
+    const rows = [];
+    rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px">
+      <span>🔥</span><span style="flex:1;font-size:15px">连续学习</span>
+      <span style="font-size:13px;color:#ffd39e">${d.streak_days} 天 · 每日挑战连击 ${d.daily_streak} 天</span></div>`);
+    rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px">
+      <span>📚</span><span style="flex:1;font-size:15px">累计作答</span>
+      <span style="font-size:13px;color:#ffd39e">${d.total_answers} 题 · 错题还剩 ${d.wrong_left}</span></div>`);
+    d.badges.forEach(b => rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,211,158,.18);border-radius:12px;padding:8px 12px">
+      <span>🏅</span><span style="flex:1;font-size:15px">${b}</span></div>`));
+    el.innerHTML = rows.join("");
+  } catch (_) { el.innerHTML = '<div style="opacity:.6;font-size:13px">成就墙加载失败</div>'; }
+}
+
 /* R46 技能树 */
 async function loadTree() {
   const tree = $("tree");
@@ -245,7 +266,7 @@ async function loadMap() {
     $("dailyGo").disabled = d.done;
   }).catch(() => {});
 }
-loadMap(); loadTree();
+loadMap(); loadTree(); loadAchv();
 
 /* 关卡玩法(自适应) */
 async function startLevel(levelId, levelName) {
@@ -320,15 +341,18 @@ async function submitAnswer() {
 }
 function showSummary(r) {
   const s = r.summary || {};
+  const badgeLine = (r.badges && r.badges.length)
+    ? `<p>🏅 研究笔记:你解锁了「${r.badges.join("」「")}」</p>` : "";
   $("overlay").style.display = "flex";
   $("overlayBody").innerHTML = `<h2>本关完成 ✓</h2>
     <p>最佳连对:${s.streak ?? 0}</p>
     <p>当前称号:${s.title ?? "–"}</p>
+    ${badgeLine}
     <p>错过的题已经记进档案,家长端能看到建议。</p>
     <button class="done-btn" onclick="closeOverlay()">回地图</button>`;
   $("play").style.display = "none";
   $("home").style.display = "block";
-  loadMap(); loadTree();
+  loadMap(); loadTree(); loadAchv();
 }
 function closeOverlay() { $("overlay").style.display = "none"; }
 
