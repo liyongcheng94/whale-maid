@@ -176,16 +176,60 @@ def gate_audio():
 
 @gate("web")
 def gate_web():
-    """web demo 冒烟:后端可编译 + 前端关键标记。"""
+    """学园三面冒烟:后端可编译 + 头像墙/孩子端/家长端/legacy 关键标记。"""
     problems = []
     try:
         py_compile.compile(str(ROOT / "web" / "backend" / "main.py"), doraise=True)
     except Exception as e:
         problems.append(f"web/backend/main.py 编译失败: {e!r}")
-    html = (ROOT / "web" / "frontend" / "index.html").read_text(encoding="utf-8")
-    for marker in ("/api/chat", "/api/eggs", "setEmo", "whaleImg", "whale_chan.png", "data-pool=\"touch_head\"", "data-pool=\"touch_belly\""):
-        if marker not in html:
-            problems.append(f"index.html 缺关键标记: {marker}")
+    checks = {
+        "index.html": ["/api/profiles", "小鲸灵学园"],
+        "kid.html": ["/api/learn/map", "/api/learn/next", "/api/learn/answer", "/api/learn/daily"],
+        "parent.html": ["/api/parent/pin/", "/api/parent/overview", "家长控制室"],
+        "legacy.html": ["/api/chat", "setEmo"],
+    }
+    for name, markers in checks.items():
+        f = ROOT / "web" / "frontend" / name
+        if not f.exists():
+            problems.append(f"{name} 不存在")
+            continue
+        html = f.read_text(encoding="utf-8")
+        for marker in markers:
+            if marker not in html:
+                problems.append(f"{name} 缺关键标记: {marker}")
+    return problems
+
+
+@gate("learn")
+
+
+@gate("learn")
+def gate_learn():
+    """学园课程合同要点:四下单元/脚手架不泄露/图谱对齐(轻量版,test_learn_content 全面版在 CI)。"""
+    problems = []
+    try:
+        math = json.loads((ROOT / "config" / "curriculum" / "g4s2_math.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        return [f"g4s2_math.json 解析失败: {e!r}"]
+    playable = [u for u in math["units"] if not u.get("planned")]
+    if not playable:
+        problems.append("没有可玩单元")
+    for u in playable:
+        for l in u.get("levels", []):
+            for qq in l.get("questions", []):
+                if not qq.get("scaffold"):
+                    problems.append(f"{qq['id']} 缺脚手架")
+                if qq.get("tier") not in ("basic", "standard", "challenge"):
+                    problems.append(f"{qq['id']} 档位非法")
+                if len(str(qq["answer"])) >= 2 and re.search(
+                        rf'(?<!\d){re.escape(str(qq["answer"]))}(?!\d)', qq.get("scaffold", "")):
+                    problems.append(f"{qq['id']} 脚手架泄露答案")
+    kg = json.loads((ROOT / "config" / "curriculum" / "knowledge_graph.json").read_text(encoding="utf-8"))
+    kg_ids = {t["id"] for t in kg["topics"]}
+    for u in playable:
+        for l in u.get("levels", []):
+            if l.get("topic") not in kg_ids:
+                problems.append(f"关卡 {l['id']} 的 topic 不在图谱")
     return problems
 
 
