@@ -34,12 +34,12 @@ class TestDailyReview:
         body = client.get("/api/learn/daily", params={"child": CHILD}).json()
         assert body["review"] is True
         assert body["questions"][0]["qid"] == "a11"
-        assert len(body["questions"]) == 3
+        assert len(body["questions"]) == 4
 
     def test_无错题纯种子(self):
         body = client.get("/api/learn/daily", params={"child": CHILD}).json()
         assert body["review"] is False
-        assert len(body["questions"]) == 3
+        assert len(body["questions"]) == 4
 
     def test_同日可复现(self):
         a = client.get("/api/learn/daily", params={"child": CHILD}).json()

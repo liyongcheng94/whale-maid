@@ -372,13 +372,13 @@ async def learn_daily(child: str = Query(...)):
             wrong_recent.append(s["qid"])
         if len(wrong_recent) >= 3:
             break
-    rng = random.Random(f"daily-{child}-{today}")
+    rng = random.Random(f"daily-{child}-{today}-xp{learn.get('xp', 0)}")
     pool = sorted(_ALL_Q.keys())
     picked = []
     if wrong_recent:
         picked.append(rng.choice(wrong_recent))
-    picked += [q for q in rng.sample(pool, 3) if q not in picked][:3 - len(picked)]
-    picked = picked[:3]
+    picked += [q for q in rng.sample(pool, 4) if q not in picked][:4 - len(picked)]
+    picked = picked[:4]  # R34: 3→4 题(1 错题复习 + 3 新题)
     return {"date": today, "done": bool(learn.get("daily_done", {}).get(today)),
             "review": bool(wrong_recent) and picked[0] in wrong_recent,
             "questions": [_question_payload(_ALL_Q[qid], _ALL_Q[qid]["tier"]) for qid in picked]}

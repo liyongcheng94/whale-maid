@@ -140,4 +140,4 @@ class TestDaily:
         d1 = client.get("/api/learn/daily", params={"child": CHILD}).json()
         d2 = client.get("/api/learn/daily", params={"child": CHILD}).json()
         assert [q["qid"] for q in d1["questions"]] == [q["qid"] for q in d2["questions"]]
-        assert len(d1["questions"]) == 3 and not d1["done"]
+        assert len(d1["questions"]) == 4 and not d1["done"]
