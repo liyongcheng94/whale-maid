@@ -232,6 +232,8 @@ loadMap();
 async function startLevel(levelId, levelName) {
   curLevel = levelId;
   curSession = "s-" + Date.now();
+  fetch("/api/learn/current", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ child: CHILD, level: levelId }) }).catch(() => {});
   $("home").style.display = "none";
   $("play").style.display = "block";
   $("progress").textContent = ` · ${levelName}`;

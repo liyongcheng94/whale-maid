@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小鲸灵学园 · 副屏</title>
+<meta http-equiv="refresh" content="60">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#0b3d66; color:#eaf6ff; font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; gap:18px; }
+  .big { font-size:clamp(28px,6vw,44px); font-weight:bold; text-align:center; line-height:1.4; }
+  .row { font-size:clamp(18px,3.5vw,26px); color:#bfe4ff; }
+  .warn { color:#ffd39e; font-size:clamp(16px,3vw,22px); background:rgba(255,211,158,.15); padding:10px 22px; border-radius:14px; }
+  .muted { color:#9fc6e8; font-size:13px; }
+</style>
+</head>
+<body>
+  <div class="big" id="who">副屏 · 加载中…</div>
+  <div class="big" id="doing" style="color:#ffd39e">–</div>
+  <div class="row" id="today">–</div>
+  <div class="row" id="acc">–</div>
+  <div class="row" id="xp">–</div>
+  <div class="warn hidden" id="needHelp">⚠ 小鲸鱼连续答错,可能需要你陪一陪</div>
+  <div class="muted">只读副屏 · 每 60 秒自动刷新 · 不镜像孩子可操作界面</div>
+<script>
+"use strict";
+const CHILD = new URLSearchParams(location.search).get("child") || "ranran";
+const TOKEN = sessionStorage.getItem("parent_token") || "";
+async function refresh() {
+  try {
+    const r = await fetch(`/api/parent/sub?child=${encodeURIComponent(CHILD)}&token=${encodeURIComponent(TOKEN)}`);
+    if (!r.ok) { document.getElementById("who").textContent = "副屏需要先在家长端解锁 PIN"; return; }
+    const d = await r.json();
+    document.getElementById("who").textContent = d.name + " 的学习副屏";
+    document.getElementById("doing").textContent = d.current && d.current.name ? `正在做:${d.current.name}` : "当前没有进行中的关卡";
+    document.getElementById("today").textContent = `今天作答:${d.today_answers} 题`;
+    document.getElementById("acc").textContent = d.today_accuracy !== null && d.today_accuracy !== undefined ? `正确率:${Math.round(d.today_accuracy * 100)}%` : "今天还没有正确率数据";
+    document.getElementById("xp").textContent = `XP ${d.xp} · ${d.title}`;
+    document.getElementById("needHelp").classList.toggle("hidden", !d.need_help);
+  } catch (_) { document.getElementById("who").textContent = "连接断开,稍后自动重试…"; }
+}
+refresh();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>

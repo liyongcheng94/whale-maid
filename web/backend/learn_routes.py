@@ -390,6 +390,24 @@ class PinIn(BaseModel):
     pin: str
 
 
+class CurrentIn(BaseModel):
+    child: str
+    level: str
+
+
+@router.post("/learn/current")
+async def learn_current(inp: CurrentIn):
+    """R40 孩子端当前任务上报:副屏与家长总览消费(只存 level 与时间戳,不存内容)。"""
+    learn = store.load_learn(inp.child)
+    lv = next((l for u in CURRICULUM["units"] for l in u.get("levels", []) if l["id"] == inp.level), None)
+    learn["current"] = {"level": inp.level,
+                        "name": lv["name"] if lv else inp.level,
+                        "unit": next((u["name"] for u in CURRICULUM["units"] if u["id"] == inp.level.split("-")[0]), ""),
+                        "ts": time.strftime("%Y-%m-%d %H:%M:%S")}
+    store.save_learn(inp.child, learn)
+    return {"ok": True}
+
+
 @router.get("/learn/wrongbook")
 async def wrongbook(child: str = Query(...)):
     """R29 错题本:近期做错的题去重列表(按最后错误时间倒序,最多 20 题)。"""
@@ -471,6 +489,36 @@ async def prereq_answer(inp: PrereqIn):
 def _require_parent(token: str):
     if not store.token_ok(token):
         raise HTTPException(401, "家长会话无效或过期")
+
+
+@router.get("/parent/playlist")
+async def parent_playlist(token: str = Query("")):
+    """R36 伴听:曲库列表下发到家长设备(音频在家长设备浏览器出声,与孩子端会话互不抢占)。"""
+    _require_parent(token)
+    songs = []
+    for gname, s in _all_songs():
+        songs.append({"group": gname, "file": s["file"], "title": s["title"],
+                      "cover": _cover_for(s["file"])})
+    return {"songs": songs}
+
+
+@router.get("/parent/sub")
+async def parent_sub(child: str = Query(...), token: str = Query("")):
+    """R38/R39 副屏摘要:只读、低密度——在做什么/今天做了多少/正确率/是否需要介入。"""
+    _require_parent(token)
+    learn = store.load_learn(child)
+    prof = next((c for c in PROFILES["children"] if c["id"] == child), {})
+    today = time.strftime("%Y-%m-%d")
+    todays = [s for s in learn.get("sessions", []) if str(s.get("ts", "")).startswith(today)]
+    acc = _topic_accuracy(todays)
+    cur = learn.get("current", {})
+    need_help = any(v >= 2 for v in [0])  # 占位:由连错会话判定
+    help_flag = sum(1 for s in todays[-3:] if not s.get("correct")) >= 3
+    return {"child": child, "name": prof.get("name", child),
+            "current": cur, "today_answers": len(todays),
+            "today_accuracy": (round(sum(1 for s in todays if s.get("correct")) / len(todays), 2) if todays else None),
+            "need_help": help_flag,
+            "xp": learn.get("xp", 0), "title": _title_for(learn.get("xp", 0))}
 
 
 @router.get("/parent/check")
