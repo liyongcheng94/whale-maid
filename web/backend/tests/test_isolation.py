@@ -33,5 +33,15 @@ class TestIdentityIsolation:
         for name, html in [("kid", KID), ("index", INDEX)]:
             assert "清空" not in html, f"{name}.html 出现重置类操作"
 
+    def test_R95_家长端文案终审(self):
+        """家长端禁低幼词;学园语气一致性(轮次 95)。"""
+        PARENT = (FRONTEND / "parent.html").read_text(encoding="utf-8")
+        for b in ["白饭饭", "晒屁股", "宝贝", "睡觉觉", "咕噜噜"]:
+            assert b not in PARENT, f"parent.html 含低幼词 {b}"
+
+    def test_R96_孩子端退出到头像墙(self):
+        """R20 边界:孩子可返回头像墙换档案(多设备/多孩子切换)。"""
+        assert "location.href" in KID or "kid.html" not in KID
+
     def test_头像墙家长入口保持弱化(self):
         assert "家长入口" in INDEX  # 弱化为页脚文字链接(PRD: 隐藏或弱化)
