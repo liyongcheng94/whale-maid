@@ -86,7 +86,7 @@
     <div id="who">
       <div class="avatar" id="whoAvatar">🐋</div>
       <div><div class="name" id="whoName">–</div>
-        <div class="title-chip">🏅 <span id="whoTitle">新手航海员</span> · XP <span id="whoXp">0</span></div></div>
+        <div class="title-chip">🏅 <span id="whoTitle">新手航海员</span> · XP <span id="whoXp">0</span> · 徽章 <span id="whoBadges">0</span></div></div>
     </div>
     <div id="topRight"><button id="muteBtn" title="声音开关">🔊</button></div>
   </div>
@@ -206,6 +206,8 @@ async function loadAchv() {
   const el = $("achv");
   try {
     const d = await (await fetch("/api/learn/achievements?child=" + encodeURIComponent(CHILD))).json();
+    const wb = document.getElementById("whoBadges");
+    if (wb) wb.textContent = d.badges.length;
     const rows = [];
     rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px">
       <span>🔥</span><span style="flex:1;font-size:15px">连续学习</span>
@@ -213,7 +215,7 @@ async function loadAchv() {
     rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px">
       <span>📚</span><span style="flex:1;font-size:15px">累计作答</span>
       <span style="font-size:13px;color:#ffd39e">${d.total_answers} 题 · 错题还剩 ${d.wrong_left}</span></div>`);
-    d.badges.forEach(b => rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,211,158,.18);border-radius:12px;padding:8px 12px">
+    d.badges.forEach(b => rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,211,158,.18);border:1px solid #ffd39e;border-radius:12px;padding:8px 12px">
       <span>🏅</span><span style="flex:1;font-size:15px">${b}</span></div>`));
     el.innerHTML = rows.join("");
   } catch (_) { el.innerHTML = '<div style="opacity:.6;font-size:13px">成就墙加载失败</div>'; }
@@ -227,9 +229,9 @@ async function loadTree() {
     const dot = { mastered: "🟢", learning: "🟡", locked: "⚪" };
     const label = { mastered: "已掌握", learning: "探索中", locked: "未解锁" };
     tree.innerHTML = d.skills.map(s =>
-      `<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px">
+      `<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px;border:${s.status === "mastered" ? "1px solid #7be3a2" : "none"}">
         <span>${dot[s.status]}</span>
-        <span style="flex:1;font-size:15px">${s.name}</span>
+        <span style="flex:1;font-size:15px">${s.name} <span style="font-size:11px;color:#9fc6e8">${s.chapter}</span></span>
         <span style="font-size:12px;color:#9fc6e8">${label[s.status]}${s.week_count ? " · 7 天 " + s.week_count + " 题" : ""}</span>
       </div>`).join("");
   } catch (_) { tree.innerHTML = '<div style="opacity:.6;font-size:13px">技能树加载失败</div>'; }
@@ -246,6 +248,7 @@ async function loadMap() {
     const div = document.createElement("div");
     div.className = "unit";
     div.innerHTML = `<div class="uname">${u.planned ? "🔒" : "📘"} ${u.name}${u.total_n ? ` · 已完成 ${u.done_n}/${u.total_n}` : ""}${u.unlocked === false && !u.planned ? " 🔒 完成上一单元解锁" : ""}</div>`;
+    div.dataset.unlocked = u.unlocked === false ? "0" : "1";
     const lv = document.createElement("div");
     lv.className = "lvls";
     (u.levels || []).forEach(l => {
@@ -261,9 +264,16 @@ async function loadMap() {
     div.appendChild(lv);
     map.appendChild(div);
   });
+  // R58 自适应推荐:第一个已解锁且未通关的关卡
+  const rec = map.querySelector('[data-unlocked="1"] .lvl:not(.done)');
+  if (rec) rec.innerHTML = "⭐ " + rec.innerHTML;
   fetch("/api/learn/daily?child=" + encodeURIComponent(CHILD)).then(r => r.json()).then(d => {
-    $("dailyGo").textContent = d.done ? "今天已完成 ✓(明天再来)" : "开始今天的挑战";
+    $("dailyGo").textContent = d.done ? "今天已完成 ✓(明天再来)" : (d.review ? "开始今天的挑战(含 1 题错题复习)" : "开始今天的挑战");
     $("dailyGo").disabled = d.done;
+  }).catch(() => {});
+  // R59 错题本剩余数显示在按钮上
+  fetch("/api/learn/wrongbook?child=" + encodeURIComponent(CHILD)).then(r => r.json()).then(d => {
+    $("wrongbookBtn").textContent = `📕 错题本(${d.items.length})`;
   }).catch(() => {});
 }
 loadMap(); loadTree(); loadAchv();
