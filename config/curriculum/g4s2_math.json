@@ -382,6 +382,62 @@
               "prompt": "1+2+3+4+5+6+7+8+9=?,用首尾配对的办法。",
               "answer": 45,
               "scaffold": "1+9、2+8、3+7、4+6,各凑 10。"
+            },
+            {
+              "id": "d1c",
+              "tier": "basic",
+              "prompt": "36+64=?",
+              "answer": 100,
+              "scaffold": "36 和 64 是凑整好朋友。"
+            },
+            {
+              "id": "d1d",
+              "tier": "standard",
+              "prompt": "78+19+22=?",
+              "answer": 119,
+              "scaffold": "78 和 22 凑成 100,再加 19。"
+            },
+            {
+              "id": "d1e",
+              "tier": "standard",
+              "prompt": "129+68+71=?",
+              "answer": 268,
+              "scaffold": "129 和 71 凑成 200。"
+            },
+            {
+              "id": "d1f",
+              "tier": "standard",
+              "prompt": "37+45+63+55=?",
+              "answer": 200,
+              "scaffold": "两两配对:37+63 和 45+55。"
+            },
+            {
+              "id": "d1g",
+              "tier": "challenge",
+              "prompt": "999+999=?",
+              "answer": 1998,
+              "scaffold": "把 999 看成 1000-1,两个加起来再退 2。"
+            },
+            {
+              "id": "d1h",
+              "tier": "challenge",
+              "prompt": "104+98+96=?",
+              "answer": 298,
+              "scaffold": "把每个数看成整百加减小零头。"
+            },
+            {
+              "id": "d1i",
+              "tier": "challenge",
+              "prompt": "1+2+3+…+19+20(从 1 加到 20)=?",
+              "answer": 210,
+              "scaffold": "首尾配对:1+20、2+19……共 10 对,每对 21。"
+            },
+            {
+              "id": "d1j",
+              "tier": "challenge",
+              "prompt": "一个数加上 87 得 200,这个数加 13 是多少?",
+              "answer": 126,
+              "scaffold": "这个数=200-87=113,再加 13。"
             }
           ]
         },
@@ -459,6 +515,62 @@
               "prompt": "50×16=?",
               "answer": 800,
               "scaffold": "16=2×8,先算 50×2。"
+            },
+            {
+              "id": "d2b",
+              "tier": "basic",
+              "prompt": "5×8=?",
+              "answer": 40,
+              "scaffold": "记住乘法好朋友:5 和 8 相乘,结果是个整数。你先算算看。"
+            },
+            {
+              "id": "d2c",
+              "tier": "basic",
+              "prompt": "15×4=?",
+              "answer": 60,
+              "scaffold": "先想 10×4,再把多出的 5×4 加上去。"
+            },
+            {
+              "id": "d2d",
+              "tier": "standard",
+              "prompt": "25×8×125×4=?",
+              "answer": 100000,
+              "scaffold": "(25×4)×(8×125)=100×1000。"
+            },
+            {
+              "id": "d2e",
+              "tier": "standard",
+              "prompt": "5×7×8×2=?",
+              "answer": 560,
+              "scaffold": "(5×2)×(7×8)=10×56。"
+            },
+            {
+              "id": "d2f",
+              "tier": "standard",
+              "prompt": "16×25=?",
+              "answer": 400,
+              "scaffold": "16=4×4,先乘 25×4=100。"
+            },
+            {
+              "id": "d2g",
+              "tier": "challenge",
+              "prompt": "125×64=?",
+              "answer": 8000,
+              "scaffold": "64=8×8,125×8=1000,再乘 8。"
+            },
+            {
+              "id": "d2h",
+              "tier": "challenge",
+              "prompt": "48×25=?",
+              "answer": 1200,
+              "scaffold": "48=12×4,25×4=100,再乘 12。"
+            },
+            {
+              "id": "d2i",
+              "tier": "challenge",
+              "prompt": "5×16×5×2=?",
+              "answer": 800,
+              "scaffold": "(5×2)×(16×5)=10×80。"
             }
           ]
         },
@@ -543,6 +655,62 @@
               "prompt": "72×125=?",
               "answer": 9000,
               "scaffold": "72=8×9,先算 125×8=1000。"
+            },
+            {
+              "id": "d3c",
+              "tier": "basic",
+              "prompt": "(30+6)×5=?",
+              "answer": 180,
+              "scaffold": "分别乘再相加:150+30。"
+            },
+            {
+              "id": "d3d",
+              "tier": "basic",
+              "prompt": "6×(10+3)=?",
+              "answer": 78,
+              "scaffold": "用分配律:6 乘 10 得 60,6 乘 3 得 18,再相加。"
+            },
+            {
+              "id": "d3e",
+              "tier": "standard",
+              "prompt": "78×10+78×90=?",
+              "answer": 7800,
+              "scaffold": "78×(10+90)=78×100。"
+            },
+            {
+              "id": "d3f",
+              "tier": "standard",
+              "prompt": "57×101=?",
+              "answer": 5757,
+              "scaffold": "57×(100+1)=5700+57。"
+            },
+            {
+              "id": "d3g",
+              "tier": "standard",
+              "prompt": "45×98+90=?",
+              "answer": 4500,
+              "scaffold": "90=45×2,原式=45×(98+2)。"
+            },
+            {
+              "id": "d3h",
+              "tier": "challenge",
+              "prompt": "73×99+73=?",
+              "answer": 7300,
+              "scaffold": "73×(99+1)=73×100。"
+            },
+            {
+              "id": "d3i",
+              "tier": "challenge",
+              "prompt": "99×38+38=?",
+              "answer": 3800,
+              "scaffold": "同上:38×(99+1)。"
+            },
+            {
+              "id": "d3j",
+              "tier": "challenge",
+              "prompt": "25×13×4-100=?",
+              "answer": 1200,
+              "scaffold": "25×4×13=1300,再减 100。"
             }
           ]
         }
@@ -886,6 +1054,62 @@
               "prompt": "用简便方法:7.8-2.4-1.6=?",
               "answer": 3.8,
               "scaffold": "连续减去两个数,等于减去它们的和 4。"
+            },
+            {
+              "id": "g28",
+              "tier": "standard",
+              "prompt": "9.9+0.9=?",
+              "answer": 10.8,
+              "scaffold": "9.9+0.1=10,再加 0.8。"
+            },
+            {
+              "id": "g29",
+              "tier": "standard",
+              "prompt": "1-0.35=?",
+              "answer": 0.65,
+              "scaffold": "1.00-0.35,连续借位。"
+            },
+            {
+              "id": "g30",
+              "tier": "standard",
+              "prompt": "0.95-0.5=?",
+              "answer": 0.45,
+              "scaffold": "0.5=0.50,对齐再减。"
+            },
+            {
+              "id": "g31",
+              "tier": "challenge",
+              "prompt": "用简便方法:9.9+9.9=?",
+              "answer": 19.8,
+              "scaffold": "10+10-0.1-0.1=20-0.2。"
+            },
+            {
+              "id": "g32",
+              "tier": "challenge",
+              "prompt": "用简便方法:12.5-3.7-2.3=?",
+              "answer": 6.5,
+              "scaffold": "3.7+2.3=6,12.5-6。"
+            },
+            {
+              "id": "g33",
+              "tier": "challenge",
+              "prompt": "一个数加 1.8 得 5.2,这个数减 0.5 是多少?",
+              "answer": 2.9,
+              "scaffold": "第一步:这个数=5.2-1.8;第二步:再减 0.5。两步分开写,别急着报结果。"
+            },
+            {
+              "id": "g34",
+              "tier": "standard",
+              "prompt": "4.2+2.98=?",
+              "answer": 7.18,
+              "scaffold": "4.20+2.98,对齐相加。"
+            },
+            {
+              "id": "g35",
+              "tier": "standard",
+              "prompt": "15-6.5-3.5=?",
+              "answer": 5,
+              "scaffold": "6.5+3.5=10,15-10=5。"
             }
           ]
         }
@@ -991,6 +1215,34 @@
               "prompt": "全班 12 人租船,大船坐 6 人,小船坐 4 人,共租 2 条船刚好坐满。大船几条?",
               "answer": 2,
               "scaffold": "试:1 大 1 小坐 10 人;2 大 0 小坐 12 人。大船填 2。"
+            },
+            {
+              "id": "i21",
+              "tier": "standard",
+              "prompt": "鸡兔共 6 只,数腿 20 条。兔有几只?",
+              "answer": 4,
+              "scaffold": "假设全是鸡:12 条,多 8 条,兔=8÷2。"
+            },
+            {
+              "id": "i22",
+              "tier": "standard",
+              "prompt": "鸡兔共 5 只,数腿 16 条。鸡有几只?",
+              "answer": 2,
+              "scaffold": "兔=(16-10)÷2=3,鸡=5-3。"
+            },
+            {
+              "id": "i23",
+              "tier": "challenge",
+              "prompt": "三轮车和自行车共 7 辆,轮子共 17 个。三轮车几辆?",
+              "answer": 3,
+              "scaffold": "假设全是自行车:14 个轮,多 3 个,三轮车=3÷1。"
+            },
+            {
+              "id": "i24",
+              "tier": "challenge",
+              "prompt": "大船坐 8 人,小船坐 5 人,共 10 条船坐满 71 人。大船几条?",
+              "answer": 7,
+              "scaffold": "假设全小船 50 人,多 21 人,大船=21÷(8-5)。"
             }
           ]
         }
