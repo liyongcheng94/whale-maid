@@ -145,6 +145,7 @@ async def learn_map(child: str = Query(...)):
             l["best"] = st.get("best")
             l["done"] = bool(st.get("done"))
             l["wrong"] = wrong_by_level.get(l["id"], 0)
+            l["stars"] = st.get("stars", 0)
         done_levels = [l for l in u["levels"] if l["done"]]
         u["done_n"] = len(done_levels)
         u["total_n"] = len(u["levels"])
@@ -206,6 +207,15 @@ def _unit_badges(learn: dict):
         if badge and badge not in badges:
             badges.append(badge)
     return badges
+
+
+def _stars_for(wrong_events: int, limit: int):
+    """R101 星级评价(洪恩式):全对首过=3星;重试后全对/错1题=2星;否则1星。"""
+    if wrong_events == 0:
+        return 3
+    if wrong_events <= max(1, limit // 3):
+        return 2
+    return 1
 
 
 def _title_for(xp: int):
@@ -331,8 +341,11 @@ async def learn_answer(inp: AnswerIn):
                 out["xp_bonus"] = 30 if first_done else 5
             learn["xp"] = learn.get("xp", 0) + out["xp_bonus"]
             out["badges"] = _unit_badges(learn)
+            stars = _stars_for(sess.get("wrong_events", 0), limit)
+            out["stars"] = stars
+            lv_state["stars"] = max(lv_state.get("stars", 0), stars)
             out["summary"] = {"streak": sess["streak"], "results": sess["results"][-limit:],
-                              "title": _title_for(learn.get("xp", 0))}
+                              "title": _title_for(learn.get("xp", 0)), "stars": stars}
         _check_wrongbook_clear(learn)
         _milestone_badges(learn)
         store.save_learn(inp.child, learn)
@@ -359,6 +372,7 @@ async def learn_answer(inp: AnswerIn):
         # R6:三次都错 → 过题换下一题;R7:沿先修链归因,推荐先修点
         sess["count"] += 1
         sess["streak"] = 0
+        sess["wrong_events"] = sess.get("wrong_events", 0) + 1
         sess["results"].append({"qid": q["id"], "correct": False})
         out["count"] = sess["count"]
         out["retry"] = False
@@ -375,7 +389,11 @@ async def learn_answer(inp: AnswerIn):
                 out["xp_bonus"] = 20
             learn["xp"] = learn.get("xp", 0) + out.get("xp_bonus", 0)
             out["badges"] = _unit_badges(learn)
-            out["summary"] = {"streak": sess["streak"], "results": sess["results"][-limit:]}
+            stars = _stars_for(sess.get("wrong_events", 0), limit)
+            out["stars"] = stars
+            lv_state = learn.setdefault("levels", {}).setdefault(q["level"], {})
+            lv_state["stars"] = max(lv_state.get("stars", 0), stars)
+            out["summary"] = {"streak": sess["streak"], "results": sess["results"][-limit:], "stars": stars}
         else:
             nq = _pick_question(topic_state["tier"], q["topic"], set(sess["seen"]))
             if nq:
@@ -386,11 +404,13 @@ async def learn_answer(inp: AnswerIn):
     if attempts[inp.qid] == 2:
         # R6 第二次错:更具体的中间步提示(仍不给答案),同题再试一次
         out["retry"] = True
+        sess["wrong_events"] = sess.get("wrong_events", 0) + 1
         out["step_hint"] = q.get("step_hint") or "把题目里的数字圈出来,一步一步写在草稿纸上,再回头对照上面的提示。"
         store.save_learn(inp.child, learn)
         return out
 
     out["retry"] = True  # 第一次错:同题再试一次,带着脚手架
+    sess["wrong_events"] = sess.get("wrong_events", 0) + 1
     store.save_learn(inp.child, learn)
     return out
 

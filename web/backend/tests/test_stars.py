@@ -1,56 +1,63 @@
-"""R1 习惯打卡星星系统测试(docs/10)。
-
-口径:打卡 = data/stars.json 持久化 +1;同任务 60s 窗口内重复不加分(防连点);
-非法 task 400;夸奖台词池/序号对齐预生成音频。测试用临时 STARS_FILE 隔离。
-"""
+"""R101/R102 星级评价测试(洪恩式):0 错=3星,少量错=2星,多错=1星;地图下发最佳星数。"""
 import sys
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # noqa: E402
-import main  # noqa: E402
-from main import STAR_TASKS, app  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import learn_routes  # noqa: E402
+import store  # noqa: E402
+from learn_routes import _stars_for  # noqa: E402
+from main import app  # noqa: E402
+
+client = TestClient(app)
+CHILD = "star-test"
 
 
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setattr(main, "STARS_FILE", tmp_path / "stars.json")
-    return TestClient(app)
+@pytest.fixture(autouse=True)
+def isolated(tmp_path, monkeypatch):
+    monkeypatch.setattr(store, "DATA", tmp_path)
+    monkeypatch.setattr(learn_routes.store, "DATA", tmp_path)
+    learn_routes.LEARN_SESSIONS.clear()
+    yield
+    learn_routes.LEARN_SESSIONS.clear()
 
 
-class TestStarsApi:
-    def test_初始状态为空(self, client):
-        body = client.get("/api/stars").json()
-        assert body["total"] == 0 and body["today"] == 0
-        assert set(body["tasks"]) == set(STAR_TASKS)
+class TestStarsCalc:
+    def test_零错三星(self):
+        assert _stars_for(0, 5) == 3
 
-    def test_打卡加分与持久化(self, client, tmp_path):
-        r1 = client.post("/api/stars", json={"task": "brush"}).json()
-        assert r1["added"] == 1 and r1["total"] == 1 and r1["pool"] == "star_praise"
-        r2 = client.post("/api/stars", json={"task": "tidy"}).json()
-        assert r2["total"] == 2
-        # 持久化:同文件再读
-        again = client.get("/api/stars").json()
-        assert again["total"] == 2 and again["today"] == 2
-        assert (tmp_path / "stars.json").exists()
+    def test_少量错两星(self):
+        """口径:limit=5 时错 1 题(≤limit//3=1)仍有 2 星;2 错及以上 1 星。"""
+        assert _stars_for(1, 5) == 2
+        assert _stars_for(2, 5) == 1
 
-    def test_同任务60秒窗口防连点(self, client):
-        r1 = client.post("/api/stars", json={"task": "brush"}).json()
-        r2 = client.post("/api/chat" if False else "/api/stars", json={"task": "brush"}).json()
-        assert r1["added"] == 1 and r2["added"] == 0
-        assert r2["pool"] == "star_repeat" and r2["total"] == r1["total"]
+    def test_多错一星(self):
+        assert _stars_for(3, 5) == 1
 
-    def test_非法任务400(self, client):
-        assert client.post("/api/stars", json={"task": "hack"}).status_code == 400
 
-    def test_夸奖台词非空且表情为开心(self, client):
-        body = client.post("/api/stars", json={"task": "sleep"}).json()
-        assert body["reply"].strip() and body["emo"] == "happy"
+class TestStarsFlow:
+    def _answer_all_correct(self, session, level="m1-1"):
+        client.get("/api/learn/next", params={"child": CHILD, "level": level, "session": session})
+        for _ in range(10):
+            qid = learn_routes.LEARN_SESSIONS[(CHILD, session)]["seen"][-1]
+            ans = learn_routes._ALL_Q[qid]["answer"]
+            body = client.post("/api/learn/answer", json={
+                "child": CHILD, "session": session, "qid": qid,
+                "answer": str(ans), "time_s": 2}).json()
+            if body.get("done"):
+                return body
+        raise AssertionError("未终局")
 
-    def test_日志记录任务标签(self, client, tmp_path):
-        client.post("/api/stars", json={"task": "tidy"})
-        import json
-        data = json.loads((tmp_path / "stars.json").read_text(encoding="utf-8"))
-        assert data["log"][0]["label"] == "收拾玩具"
+    def test_全对首过三星并写入档案(self):
+        body = self._answer_all_correct("s3")
+        assert body["stars"] == 3
+        learn = store.load_learn(CHILD)
+        assert learn["levels"]["m1-1"]["stars"] == 3
+
+    def test_地图下发最佳星数(self):
+        self._answer_all_correct("s4")  # 先通关,再验证地图下发最佳星数
+        m = client.get("/api/learn/map", params={"child": CHILD}).json()
+        lvl = next(l for u in m["units"] for l in u["levels"] if l["id"] == "m1-1")
+        assert lvl["stars"] == 3
