@@ -118,6 +118,7 @@
         <button class="g" data-say="我们来猜谜语吧">🧩 解谜工坊</button>
         <button class="g" data-say="我们来玩猜动物游戏">🐾 特性研究所</button>
         <button class="g" id="englishBtn">🔤 英语角</button>
+        <button class="g" id="readBtn">🎤 跟读练习</button>
         <button class="g" data-say="随便来首歌听">🎵 音乐角</button>
         <button class="g" data-say="今天天气怎么样">🌤 天气台</button>
       </div>
@@ -245,6 +246,56 @@ $("chineseBtn").addEventListener("click", async () => {
     bubble("今天的词语读完啦!试着用它们造个句子吧。");
   } catch (_) { bubble("语文角被海浪挡了一下,再试一次。"); }
 });
+
+/* R106 跟读练习(洪恩式口语反馈):听词→跟读→即时判分 */
+let readList = null, readIdx = 0;
+function matchWord(transcript, target) {
+  const norm = s => String(s).toLowerCase().replace(/[\s.,!?。,!?;、·'"-]/g, "");
+  const t = norm(transcript), g = norm(target);
+  if (!t || !g) return false;
+  return t.includes(g) || g.includes(t);
+}
+async function readPractice() {
+  pokeOff();
+  try {
+    readList = await (await fetch("/api/learn/chinese/daily?child=" + encodeURIComponent(CHILD))).json();
+    readIdx = 0;
+    const ov = $("overlay");
+    ov.style.display = "flex";
+    $("overlayBody").innerHTML = `<h2>🎤 跟读练习</h2><p id="rpWord" style="font-size:24px;font-weight:bold"></p>
+      <p id="rpFb" style="min-height:28px"></p>
+      <button class="done-btn" id="rpMic">开始跟读</button>
+      <button class="done-btn" style="background:#0e5a8f" onclick="closeOverlay();loadMap()">完成练习</button>`;
+    showReadWord();
+  } catch (_) { bubble("跟读练习被海浪挡了一下,再试一次。"); }
+}
+function showReadWord() {
+  const w = readList.words[readIdx];
+  $("rpWord").textContent = w.word;
+  $("rpFb").textContent = "点「开始跟读」,大声读出来!";
+  playUrl("/egg-audio/chinese_" + w.word + ".mp3").then(ok => { if (!ok) speak(w.word); });
+  $("rpMic").onclick = () => listenRead(w.word);
+}
+function listenRead(target) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $("rpFb").textContent = "这台浏览器听不见声音,照着屏幕读就好!"; return; }
+  const rec = new SR();
+  rec.lang = "zh-CN"; rec.interimResults = false; rec.maxAlternatives = 3;
+  $("rpFb").textContent = "我在听,请读…";
+  rec.onresult = e => {
+    const ok = Array.from(e.results[0]).some(r => matchWord(r.transcript, target));
+    if (ok) {
+      $("rpFb").textContent = "读得真棒!✨";
+      spawnParticles("hearts", innerWidth / 2, innerHeight / 2);
+    } else {
+      const said = e.results[0][0].transcript;
+      $("rpFb").textContent = "再读一遍,慢一点、声音大一点。(听到的是:" + said + ")";
+    }
+  };
+  rec.onerror = () => { $("rpFb").textContent = "没听清,再试一次。"; };
+  rec.start();
+}
+$("readBtn").addEventListener("click", readPractice);
 
 /* R46 技能树 */
 async function loadTree() {
