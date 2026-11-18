@@ -455,9 +455,12 @@ $("wrongbookBtn").addEventListener("click", async () => {
   box.innerHTML = '<div style="opacity:.7;font-size:14px">加载中…</div>';
   try {
     const d = await (await fetch("/api/learn/wrongbook?child=" + encodeURIComponent(CHILD))).json();
+    const tierCN = { basic: "基础", standard: "标准", challenge: "挑战" };
+    const orderT = { basic: 0, standard: 1, challenge: 2 };
+    d.items.sort((a, b) => orderT[a.tier] - orderT[b.tier]);
     box.innerHTML = d.items.length
       ? d.items.map(i => `<div class="card" style="margin:8px 0;cursor:pointer" data-qid="${i.qid}" data-prompt="${i.prompt}" data-level="${i.level}">
-            <b>【${i.tier === "basic" ? "基础" : i.tier === "standard" ? "标准" : "挑战"}】</b>${i.prompt}
+            <b>【${tierCN[i.tier] || i.tier}】</b>${i.prompt}
             <div style="font-size:12px;color:#9fc6e8">${i.ts} · 点我重做</div></div>`).join("")
       : '<div style="opacity:.7;font-size:14px">错题本空空如也,太厉害了!</div>';
     box.querySelectorAll("[data-qid]").forEach(el =>

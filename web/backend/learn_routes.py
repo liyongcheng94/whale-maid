@@ -289,6 +289,9 @@ async def learn_answer(inp: AnswerIn):
         learn.setdefault("sessions", []).append(
             {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "level": q["level"], "qid": q["id"],
              "topic": q["topic"], "correct": True, "time_s": round(inp.time_s, 1)})
+        learn["skill_mastery"] = {t: {"tier": st.get("tier"), "right": st.get("right_streak", 0),
+                                      "wrong": st.get("wrong_streak", 0)}
+                                  for t, st in learn.get("topic_state", {}).items()}
         # 连对 2 → 升一档
         ts_right = topic_state.get("right_streak", 0) + 1
         topic_state["wrong_streak"] = 0
