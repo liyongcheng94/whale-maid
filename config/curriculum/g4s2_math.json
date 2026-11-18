@@ -1595,6 +1595,69 @@
               "scaffold": "斐波那契:前两个数相加等于后一个。"
             }
           ]
+        },
+        {
+          "id": "m10-2",
+          "name": "进阶规律",
+          "topic": "m_patterns",
+          "questions": [
+            {
+              "id": "j21",
+              "tier": "standard",
+              "prompt": "找规律填数:3、6、12、24、( )。",
+              "answer": 48,
+              "scaffold": "每次乘 2(扩大一倍)。"
+            },
+            {
+              "id": "j22",
+              "tier": "standard",
+              "prompt": "找规律填数:1、4、9、16、( )。",
+              "answer": 25,
+              "scaffold": "这些是平方数:1×1、2×2、3×3、4×4、下一个是 5×5。"
+            },
+            {
+              "id": "j23",
+              "tier": "standard",
+              "prompt": "找规律填数:2、6、18、54、( )。",
+              "answer": 162,
+              "scaffold": "每次乘 3。"
+            },
+            {
+              "id": "j24",
+              "tier": "standard",
+              "prompt": "找规律填数:100、95、90、85、( )。",
+              "answer": 80,
+              "scaffold": "每次减 5。"
+            },
+            {
+              "id": "j25",
+              "tier": "standard",
+              "prompt": "找规律填数:7、14、28、56、( )。",
+              "answer": 112,
+              "scaffold": "每次乘 2。"
+            },
+            {
+              "id": "j26",
+              "tier": "challenge",
+              "prompt": "找规律填数:1、4、9、16、25、( )。",
+              "answer": 36,
+              "scaffold": "平方数序列:下一个是 6×6。"
+            },
+            {
+              "id": "j27",
+              "tier": "challenge",
+              "prompt": "找规律填数:2、3、5、8、12、( )。",
+              "answer": 17,
+              "scaffold": "相邻的差是 1、2、3、4——下一个差是 5。"
+            },
+            {
+              "id": "j28",
+              "tier": "challenge",
+              "prompt": "找规律填数:1、8、27、( )。",
+              "answer": 64,
+              "scaffold": "这些是立方数:1×1×1、2×2×2、3×3×3、下一个是 4×4×4。"
+            }
+          ]
         }
       ]
     }
