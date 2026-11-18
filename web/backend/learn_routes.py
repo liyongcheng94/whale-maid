@@ -608,7 +608,8 @@ async def parent_sub(child: str = Query(...), token: str = Query("")):
     cur = learn.get("current", {})
     need_help = any(v >= 2 for v in [0])  # 占位:由连错会话判定
     help_flag = sum(1 for s in todays[-3:] if not s.get("correct")) >= 3
-    return {"child": child, "name": prof.get("name", child),
+    streak = _streak_days({s.get("ts", "")[:10] for s in learn.get("sessions", [])})
+    return {"child": child, "name": prof.get("name", child), "streak_days": streak,
             "current": cur, "today_answers": len(todays),
             "today_accuracy": (round(sum(1 for s in todays if s.get("correct")) / len(todays), 2) if todays else None),
             "need_help": help_flag,

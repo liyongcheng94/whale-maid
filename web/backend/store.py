@@ -25,8 +25,12 @@ def load_json(path: Path, default):
 
 
 def save_json(path: Path, data) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    """R67 原子写:先写临时文件再 replace,避免多设备并发写坏 JSON。"""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def learn_path(child_id: str) -> Path:
