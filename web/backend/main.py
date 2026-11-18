@@ -73,6 +73,12 @@ EMO_PROSODY = {
 SESSIONS = {}
 SESSION_TURNS = 8
 CHAT_LOG = PROJECT / "data" / "chat_log.jsonl"
+GAME_COUNTERS = {}  # R83 课外馆游戏计数(内存):sid -> {riddles:n,...}
+
+
+def _bump_game(sid: str, key: str):
+    g = GAME_COUNTERS.setdefault(sid, {})
+    g[key] = g.get(key, 0) + 1
 
 
 def _load_dotenv() -> None:
@@ -307,6 +313,7 @@ async def eggs():
 @app.post("/api/chat")
 async def chat(inp: ChatIn):
     text = inp.text.strip()[:500]
+    sid = inp.session_id[:64]
     mode = inp.mode if inp.mode in SYSTEM_PROMPTS else "adult"
     if not text:
         idx, reply = _pick_idx("fallback")
@@ -323,11 +330,11 @@ async def chat(inp: ChatIn):
     if any(k in text for k in _POEM_KEYWORDS):
         idx, intro = _pick_idx("poem_start")
         poem = random.choice(POEMS)
+        _bump_game(sid, "poems")
         return {"reply": intro, "emo": EGGS["emo"].get("poem_start"), "pool": "poem_start",
                 "idx": idx, "source": "offline", "poem": poem, "song": None, "song_title": None,
                 "song_pending": None}
     # R4 数学游戏:进行中优先判答(有数字或想退出);否则命中开局词才开新局
-    sid = inp.session_id[:64]
     game = MATH_GAMES.get(sid)
     if game and (any(k in text for k in _MATH_EXIT_KW) or _extract_number(text) is not None):
         if any(k in text for k in _MATH_EXIT_KW):
@@ -392,6 +399,7 @@ async def chat(inp: ChatIn):
     if any(k in text for k in _RIDDLE_START_KW):
         r = random.choice(RIDDLES)
         RIDDLE_GAMES[sid] = {"id": r["id"], "miss": 0}
+        _bump_game(sid, "riddles")
         idx, intro = _pick_idx("riddle_start")
         return _chat_resp("riddle_start", idx, intro,
                           {"riddle": {"id": r["id"], "q": r["q"]}, "q_audio": f"riddle_{r['id']}_q"})
@@ -430,6 +438,7 @@ async def chat(inp: ChatIn):
     if "猜动物" in text or "动物游戏" in text:
         a = random.choice(ANIMALS)
         ANIMAL_GAMES[sid] = {"id": a["id"], "clue": 1}
+        _bump_game(sid, "animals")
         idx, intro = _pick_idx("animal_start")
         return _chat_resp("animal_start", idx, intro,
                           {"animal": {"id": a["id"], "clue_no": 1, "clue": a["clues"][0]},
@@ -528,9 +537,11 @@ async def chat(inp: ChatIn):
     # 会话记忆(离线回复也入记忆,LLM 恢复后能接上刚才的话题)
     history.append({"role": "user", "content": text})
     history.append({"role": "assistant", "content": reply})
-    # 本地对话日志:家长可查 + 排障;只落本地文件,不上传
+    # 本地对话日志:家长可查 + 排障;只落本地文件,不上传(R87 超过 1MB 轮转)
     try:
         CHAT_LOG.parent.mkdir(exist_ok=True)
+        if CHAT_LOG.exists() and CHAT_LOG.stat().st_size > 1024 * 1024:
+            CHAT_LOG.replace(CHAT_LOG.with_suffix(CHAT_LOG.suffix + f".{time.strftime('%Y%m%d')}")) 
         with CHAT_LOG.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
                                 "session": inp.session_id[:64], "user": text,

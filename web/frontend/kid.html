@@ -86,7 +86,7 @@
     <div id="who">
       <div class="avatar" id="whoAvatar">🐋</div>
       <div><div class="name" id="whoName">–</div>
-        <div class="title-chip">🏅 <span id="whoTitle">新手航海员</span> · XP <span id="whoXp">0</span> · 徽章 <span id="whoBadges">0</span></div></div>
+        <div class="title-chip">🏅 <span id="whoTitle">新手航海员</span> · XP <span id="whoXp">0</span> · 🔥 <span id="whoStreak">0</span> 天 · 徽章 <span id="whoBadges">0</span></div></div>
     </div>
     <div id="topRight"><button id="muteBtn" title="声音开关">🔊</button></div>
   </div>
@@ -201,6 +201,8 @@ async function loadAchv() {
     const d = await (await fetch("/api/learn/achievements?child=" + encodeURIComponent(CHILD))).json();
     const wb = document.getElementById("whoBadges");
     if (wb) wb.textContent = d.badges.length;
+    const ws = document.getElementById("whoStreak");
+    if (ws) ws.textContent = d.streak_days;
     const rows = [];
     rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px">
       <span>🔥</span><span style="flex:1;font-size:15px">连续学习</span>

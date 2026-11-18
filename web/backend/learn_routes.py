@@ -613,12 +613,32 @@ async def parent_sub(child: str = Query(...), token: str = Query("")):
     help_flag = sum(1 for s in todays[-3:] if not s.get("correct")) >= 3
     streak = _streak_days({s.get("ts", "")[:10] for s in learn.get("sessions", [])})
     return {"child": child, "name": prof.get("name", child), "streak_days": streak,
+            "badges_count": len(learn.get("badges", [])),
             "current": cur, "today_answers": len(todays),
             "today_accuracy": (round(sum(1 for s in todays if s.get("correct")) / len(todays), 2) if todays else None),
             "need_help": help_flag,
             "xp": learn.get("xp", 0), "title": _title_for(learn.get("xp", 0)),
             "badges": learn.get("badges", []),
             "current_progress": learn.get("levels", {}).get((cur or {}).get("level", ""), {})}
+
+
+@router.get("/parent/export/{child}")
+async def parent_export(child: str, token: str = Query("")):
+    """R85 数据主权:导出孩子学习档案原始 JSON(家长下载)。"""
+    _require_parent(token)
+    data = store.load_learn(child)
+    return JSONResponse(data, headers={"Content-Disposition": f"attachment; filename=learn_{child}.json"})
+
+
+@router.post("/parent/purge/{child}")
+async def parent_purge(child: str, token: str = Query("")):
+    """R84 数据清除:删除孩子学习档案(不可恢复;家长 token 必须)。"""
+    _require_parent(token)
+    p = store.learn_path(child)
+    existed = p.exists()
+    if existed:
+        p.unlink()
+    return {"purged": existed, "child": child}
 
 
 @router.get("/parent/check")
