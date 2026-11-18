@@ -1,7 +1,7 @@
-# 小鲸灵 WhaleMaid 🐋
+# 小鲸灵学园 WhaleMaid 🐋
 
-> DeepSeek 鲸鱼娘 AI 语音摆件——把玩 + 学习兼顾的 DIY 桌面伴侣。
-> 基于 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 二次开发，自建服务端，ESP32-S3 + DeepSeek API。
+> **小鲸灵学园**:面向 10 岁儿童的 AI 学习/游玩 Agent(双身份:孩子空间 + 家长控制室)。入口:`web/frontend/index.html` 头像墙;隐私与数据见 docs/12;100 轮迭代见 docs/11。
+> **小鲸灵摆件**:DeepSeek 鲸鱼娘 AI 语音桌面摆件——基于 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) 二次开发，自建服务端，ESP32-S3 + DeepSeek API（旧陪伴版保留于 `web/frontend/legacy.html`）。
 
 ![status](https://img.shields.io/badge/status-Tier1_执行中-blue) ![license](https://img.shields.io/badge/model_license-CC_BY_NC_SA_4.0-red)
 
