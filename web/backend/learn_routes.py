@@ -162,6 +162,37 @@ async def learn_map(child: str = Query(...)):
 
 
 UNIT_BADGES = {"u1": "四则运算骑士", "u3": "运算律学徒", "u4": "小数探索家"}
+MILESTONE_BADGES = {"streak7": "七日不辍", "wrongbook_clear": "错题清零大师", "answers100": "百题斩"}
+
+
+def _milestone_badges(learn: dict):
+    """R49-R51 里程碑徽章:连续 7 天/错题清零/累计百题(只增不消耗)。"""
+    badges = learn.setdefault("badges", [])
+    streak = _streak_days({s.get("ts", "")[:10] for s in learn.get("sessions", [])})
+    if streak >= 7 and MILESTONE_BADGES["streak7"] not in badges:
+        badges.append(MILESTONE_BADGES["streak7"])
+    if len(learn.get("sessions", [])) >= 100 and MILESTONE_BADGES["answers100"] not in badges:
+        badges.append(MILESTONE_BADGES["answers100"])
+    return badges
+
+
+def _wrongbook_qids(learn: dict):
+    """历史做错的题(去重,按最后状态)。"""
+    state = {}
+    for s in learn.get("sessions", []):
+        qid = s.get("qid")
+        if qid:
+            state[qid] = bool(s.get("correct"))
+    return [qid for qid, ok in state.items() if not ok]
+
+
+def _check_wrongbook_clear(learn: dict):
+    """R50:曾经有错题、现在全做过对 → 错题清零大师。"""
+    if _wrongbook_qids(learn):
+        return
+    badges = learn.setdefault("badges", [])
+    if len(learn.get("sessions", [])) >= 10 and MILESTONE_BADGES["wrongbook_clear"] not in badges:
+        badges.append(MILESTONE_BADGES["wrongbook_clear"])
 
 
 def _unit_badges(learn: dict):
@@ -299,6 +330,8 @@ async def learn_answer(inp: AnswerIn):
             out["badges"] = _unit_badges(learn)
             out["summary"] = {"streak": sess["streak"], "results": sess["results"][-limit:],
                               "title": _title_for(learn.get("xp", 0))}
+        _check_wrongbook_clear(learn)
+        _milestone_badges(learn)
         store.save_learn(inp.child, learn)
         return out
 
@@ -406,6 +439,25 @@ async def learn_current(inp: CurrentIn):
                         "ts": time.strftime("%Y-%m-%d %H:%M:%S")}
     store.save_learn(inp.child, learn)
     return {"ok": True}
+
+
+@router.get("/learn/achievements")
+async def achievements(child: str = Query(...)):
+    """R48 成就墙:单元徽章+里程碑徽章+连续天数+累计题数+每日连击。"""
+    learn = store.load_learn(child)
+    streak = _streak_days({s.get("ts", "")[:10] for s in learn.get("sessions", [])})
+    # R53 每日连击:连续完成每日挑战的天数
+    daily_streak = 0
+    import datetime
+    d = datetime.date.today()
+    while learn.get("daily_done", {}).get(d.isoformat()):
+        daily_streak += 1
+        d = datetime.date.fromordinal(d.toordinal() - 1)
+    wrong_left = len(_wrongbook_qids(learn))
+    return {"child": child, "badges": learn.get("badges", []),
+            "streak_days": streak, "daily_streak": daily_streak,
+            "total_answers": len(learn.get("sessions", [])),
+            "wrong_left": wrong_left}
 
 
 @router.get("/learn/tree")
