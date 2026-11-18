@@ -297,6 +297,24 @@
         "question": "鸡兔共 4 只,腿 12 条,兔有几只?",
         "answer": "2"
       }
+    },
+    {
+      "id": "m_patterns",
+      "name": "找规律",
+      "domain": "数与代数",
+      "grade": 4,
+      "semester": "下",
+      "chapter": "思维乐园(学而思思维对标)",
+      "type": "reasoning",
+      "description": "观察数列的变化规律(等差、倍增、递增差、斐波那契),预测下一个数。",
+      "mastery_criteria": [
+        "能发现等差规律",
+        "能发现倍增与递增差规律"
+      ],
+      "diagnostic_question": {
+        "question": "2、5、8、11 的下一个数是多少?",
+        "answer": "14"
+      }
     }
   ],
   "edges": [
@@ -389,6 +407,12 @@
       "prerequisiteId": "m_muldiv_rel",
       "strength": "hard",
       "reason": "平均数=总和÷个数"
+    },
+    {
+      "topicId": "m_patterns",
+      "prerequisiteId": "m_addsub_rel",
+      "strength": "hard",
+      "reason": "等差规律依赖加减法"
     }
   ]
 }
