@@ -613,7 +613,9 @@ async def parent_sub(child: str = Query(...), token: str = Query("")):
             "current": cur, "today_answers": len(todays),
             "today_accuracy": (round(sum(1 for s in todays if s.get("correct")) / len(todays), 2) if todays else None),
             "need_help": help_flag,
-            "xp": learn.get("xp", 0), "title": _title_for(learn.get("xp", 0))}
+            "xp": learn.get("xp", 0), "title": _title_for(learn.get("xp", 0)),
+            "badges": learn.get("badges", []),
+            "current_progress": learn.get("levels", {}).get((cur or {}).get("level", ""), {})}
 
 
 @router.get("/parent/check")
@@ -641,7 +643,9 @@ async def parent_report(child: str = Query(...), token: str = Query(""), days: i
         "accuracy": round(sum(1 for s in sessions if s.get("correct")) / len(sessions), 2) if sessions else None,
         "by_topic": {_topic_name(t): {"count": n, "accuracy": round(a, 2)} for t, (n, a) in acc.items()},
         "adjust_log": learn.get("adjust_log", [])[-20:],
+        "by_week": _by_week(sessions),
         "records": sessions[-200:],
+        "schema": 2,
     }
     return JSONResponse(report, headers={"Content-Disposition": f"attachment; filename=report_{child}_{days}d.json"})
 
@@ -749,6 +753,21 @@ def _streak_days(days_set):
         streak += 1
         d = datetime.date.fromordinal(d.toordinal() - 1)
     return streak
+
+
+def _by_week(sessions):
+    """R70 报告 v2:按 ISO 周聚合作答数与正确率。"""
+    import datetime
+    out = {}
+    for s in sessions:
+        try:
+            d = datetime.date.fromisoformat(str(s.get("ts", ""))[:10])
+            key = f"{d.isocalendar().year}-W{d.isocalendar().week:02d}"
+        except Exception:
+            continue
+        n, c = out.get(key, (0, 0))
+        out[key] = (n + 1, c + (1 if s.get("correct") else 0))
+    return {k: {"count": n, "accuracy": round(c / n, 2)} for k, (n, c) in sorted(out.items())}
 
 
 def _topic_accuracy(sessions):
