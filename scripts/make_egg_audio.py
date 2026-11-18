@@ -76,6 +76,12 @@ async def main() -> int:
         for pool, lines in json.loads(xy_path.read_text(encoding="utf-8"))["triggers"].items():
             for i, text in enumerate(lines, 1):
                 jobs.append((f"{pool}_{i}", text, None))
+    # R103 语文角:词语与课文句预生成 chinese_{word}.mp3 / chinese_{word}_sent.mp3
+    cn_path = ROOT / "config" / "chinese_words.json"
+    if cn_path.exists():
+        for w in json.loads(cn_path.read_text(encoding="utf-8"))["words"]:
+            jobs.append((f"chinese_{w['word']}", w["word"], None))
+            jobs.append((f"chinese_{w['word']}_sent", w["sentence"], None))
     # R5 猜谜语:谜面预生成 riddle_{id}_q.mp3
     riddles_path = ROOT / "config" / "riddles.json"
     if riddles_path.exists():

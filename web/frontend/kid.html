@@ -232,6 +232,20 @@ $("englishBtn").addEventListener("click", async () => {
   } catch (_) { bubble("英语角被海浪挡了一下,再试一次。"); }
 });
 
+/* R103 语文角:每日 3 词跟读(词+课文句,预生成音频) */
+$("chineseBtn").addEventListener("click", async () => {
+  pokeOff();
+  try {
+    const d = await (await fetch("/api/learn/chinese/daily?child=" + encodeURIComponent(CHILD))).json();
+    for (const w of d.words) {
+      bubble(`📖 ${w.word}`, 15000);
+      if (!(await playUrl(`/egg-audio/chinese_${w.word}.mp3`))) await speak(w.word);
+      if (!(await playUrl(`/egg-audio/chinese_${w.word}_sent.mp3`))) await speak(w.sentence);
+    }
+    bubble("今天的词语读完啦!试着用它们造个句子吧。");
+  } catch (_) { bubble("语文角被海浪挡了一下,再试一次。"); }
+});
+
 /* R46 技能树 */
 async function loadTree() {
   const tree = $("tree");

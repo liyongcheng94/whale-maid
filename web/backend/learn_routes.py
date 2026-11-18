@@ -514,6 +514,16 @@ async def learn_tree(child: str = Query(...)):
 
 
 WORDS = json.loads((CURRICULUM_DIR.parent / "words.json").read_text(encoding="utf-8"))["words"]
+CHINESE_WORDS = json.loads((CURRICULUM_DIR.parent / "chinese_words.json").read_text(encoding="utf-8"))["words"]
+
+
+@router.get("/learn/chinese/daily")
+async def chinese_daily(child: str = Query(...)):
+    """R103 语文角:按日期+child 种子选 3 个四下词语(词+课文句,可复现)。"""
+    today = time.strftime("%Y-%m-%d")
+    rng = random.Random(f"chinese-{child}-{today}")
+    picked = rng.sample(CHINESE_WORDS, 3)
+    return {"date": today, "words": picked}
 
 
 @router.get("/learn/words/daily")
