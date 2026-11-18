@@ -16,6 +16,8 @@ import os
 
 import httpx  # noqa: F401  (保持与 main 同一依赖面)
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import store
@@ -735,6 +737,7 @@ async def parent_report(child: str = Query(...), token: str = Query(""), days: i
         "answers": len(sessions),
         "accuracy": round(sum(1 for s in sessions if s.get("correct")) / len(sessions), 2) if sessions else None,
         "by_topic": {_topic_name(t): {"count": n, "accuracy": round(a, 2)} for t, (n, a) in acc.items()},
+        "trends": _trend_by_topic(sessions),
         "adjust_log": learn.get("adjust_log", [])[-20:],
         "by_week": _by_week(sessions),
         "records": sessions[-200:],
@@ -846,6 +849,18 @@ def _streak_days(days_set):
         streak += 1
         d = datetime.date.fromordinal(d.toordinal() - 1)
     return streak
+
+
+def _trend_by_topic(sessions):
+    """R109 学情趋势:按话题对比本周/上周正确率(弧线而非单点,PRD §0.3)。"""
+    this_w = _topic_accuracy([s for s in sessions if 0 <= _days_ago(s.get("ts", "")) <= 7])
+    last_w = _topic_accuracy([s for s in sessions if 7 < _days_ago(s.get("ts", "")) <= 14])
+    out = {}
+    for t in set(this_w) | set(last_w):
+        tw, lw = this_w.get(t), last_w.get(t)
+        out[_topic_name(t)] = {"this_week": round(tw[1], 2) if tw else None,
+                               "last_week": round(lw[1], 2) if lw else None}
+    return out
 
 
 def _by_week(sessions):
