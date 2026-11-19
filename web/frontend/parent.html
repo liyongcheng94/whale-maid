@@ -236,6 +236,12 @@ function openListen() {
         <span style="flex:1;font-size:14px">${s.title}</span>
         <span class="tag">${s.group}</span></div>`).join("");
     list.querySelectorAll("[data-file]").forEach(row => row.addEventListener("click", () => playListen(row.dataset.file)));
+    list.insertAdjacentHTML("beforeend", '<div style="margin-top:10px;font-size:13px;color:#5a7a96">🎵 白噪音(学习/入睡)</div>');
+    [["waves.wav", "🌊 海浪"], ["pbrown.wav", "🌧 雨声"], ["white.wav", "🌫 均匀噪音"]].forEach(pair => {
+      const f = pair[0], label = pair[1];
+      list.insertAdjacentHTML("beforeend", '<div class="song-row" data-noise="' + f + '" style="display:flex;gap:8px;align-items:center;background:#f7fbff;border-radius:10px;padding:8px 10px;margin:6px 0;cursor:pointer"><span style="flex:1;font-size:14px">' + label + '</span><span class="tag">循环点播</span></div>');
+    });
+    list.querySelectorAll("[data-noise]").forEach(row => row.addEventListener("click", () => playListen(row.dataset.noise)));
   }).catch(() => list.innerHTML = "加载失败");
 }
 let listenAudio = null;

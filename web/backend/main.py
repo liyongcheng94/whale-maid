@@ -737,6 +737,9 @@ if MUSIC_DIR.exists():
     app.mount("/music-audio", StaticFiles(directory=str(MUSIC_DIR)), name="music-audio")
 
 app.mount("/music-lyrics", StaticFiles(directory=str(LYRICS_DIR)), name="music-lyrics")
+NOISE_DIR = PROJECT / "assets_audio" / "noise"   # R114 伴听白噪音(make_noise.py 产物)
+if NOISE_DIR.exists():
+    app.mount("/noise-audio", StaticFiles(directory=str(NOISE_DIR)), name="noise-audio")
 app.mount("/music-covers", StaticFiles(directory=str(COVERS_DIR)), name="music-covers")
 
 
