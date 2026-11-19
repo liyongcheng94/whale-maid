@@ -1,4 +1,4 @@
-"""R120 徽章获得日期测试:新徽章记录获得日期,成就墙端点下发。"""
+"""R120 徽章获得日期测试:u1 徽章需三关全通;新徽章记录获得日期,成就墙端点下发。"""
 import sys
 from pathlib import Path
 
@@ -23,16 +23,23 @@ def isolated(tmp_path, monkeypatch):
     learn_routes.LEARN_SESSIONS.clear()
 
 
-def test_单元徽章带日期():
-    client.get("/api/learn/next", params={"child": CHILD, "level": "m1-1", "session": "bd"})
+def _finish(child, session, level):
+    client.get("/api/learn/next", params={"child": child, "level": level, "session": session})
     for _ in range(10):
-        qid = learn_routes.LEARN_SESSIONS[(CHILD, "bd")]["seen"][-1]
+        qid = learn_routes.LEARN_SESSIONS[(child, session)]["seen"][-1]
         ans = learn_routes._ALL_Q[qid]["answer"]
         body = client.post("/api/learn/answer", json={
-            "child": CHILD, "session": "bd", "qid": qid,
+            "child": child, "session": session, "qid": qid,
             "answer": str(ans), "time_s": 2}).json()
         if body.get("done"):
-            break
+            return body
+    raise AssertionError("未触发终局")
+
+
+def test_单元徽章带日期():
+    """u1 徽章需三关全通;badge_dates 记录获得日期。"""
+    for s, lv in [("b1", "m1-1"), ("b2", "m1-2"), ("b3", "m1-3")]:
+        _finish(CHILD, s, level=lv)
     a = client.get("/api/learn/achievements", params={"child": CHILD}).json()
     assert "四则运算骑士" in a["badges"]
-    assert a["badge_dates"]["四则运算骑士"] == a["badge_dates"]["四则运算骑士"]
+    assert a["badge_dates"]["四则运算骑士"]  # 日期字符串非空
