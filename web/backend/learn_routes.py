@@ -58,25 +58,31 @@ def _topic_name(topic_id):
 
 
 async def _llm_explain(q, user_answer):
-    """R105 学而思对标:第二次答错时,用 DeepSeek 生成个性化讲解(错在哪+下一步怎么想,≤120 字)。
-    失败/无 key 返回 None(前端回落静态中间步提示)。"""
+    """R105/R113 学而思对标:第二次答错时,用 DeepSeek 生成个性化讲解并归类错因
+    (概念/计算/审题)。失败/无 key 返回 (None, None)(前端回落静态中间步提示)。"""
     if not DEEPSEEK_KEY:
-        return None
+        return None, None
     try:
         async with httpx.AsyncClient(timeout=12) as client:
             r = await client.post(
                 DEEPSEEK_URL,
                 headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
                 json={"model": DEEPSEEK_MODEL, "thinking": DEEPSEEK_THINKING,
-                      "max_tokens": 80, "temperature": 0.5,
+                      "max_tokens": 110, "temperature": 0.5,
                       "messages": [
-                          {"role": "system", "content": "你是小学四年级数学辅导老师。学生答错了一道题。请用 1~2 句话指出他可能错在哪一步、下一步该怎么想。语气平等友善,不直接给数字答案。"},
+                          {"role": "system", "content": "你是小学四年级数学辅导老师。学生答错了一道题。请先判断错因类型(概念不清/计算失误/审题偏差 三选一),再用 1~2 句话指出错在哪一步、下一步该怎么想。语气平等友善,不直接给数字答案。格式:第一行输出「错因:概念」或「错因:计算」或「错因:审题」,之后是讲解。"},
                           {"role": "user", "content": f"题目:{q['prompt']}\n学生的答案:{user_answer}\n请给出针对他错因的讲解。"}]})
             r.raise_for_status()
-            return (r.json()["choices"][0]["message"]["content"] or "").strip()[:120] or None
+            raw = (r.json()["choices"][0]["message"]["content"] or "").strip()[:160]
+            if not raw:
+                return None, None
+            m = re.search(r"错因[:：]\s*(概念|计算|审题)", raw)
+            category = m.group(1) if m else None
+            body = re.sub(r"^错因[:：].*?(?:\n|$)", "", raw).strip()
+            return (body[:120] or None), category
     except Exception as e:
         print(f"[learn] llm explain 失败: {e!r}")
-        return None
+        return None, None
 
 
 def _prereq_hint(topic: str):
@@ -438,9 +444,15 @@ async def learn_answer(inp: AnswerIn):
         out["retry"] = True
         sess["wrong_events"] = sess.get("wrong_events", 0) + 1
         out["step_hint"] = q.get("step_hint") or "把题目里的数字圈出来,一步一步写在草稿纸上,再回头对照上面的提示。"
-        explain = await _llm_explain(q, inp.answer)
+        explain, error_type = await _llm_explain(q, inp.answer)
         if explain:
             out["explain"] = explain
+        if error_type:
+            out["error_type"] = error_type
+            for s in reversed(learn.get("sessions", [])):
+                if s.get("qid") == q["id"] and not s.get("correct"):
+                    s["error_type"] = error_type
+                    break
         store.save_learn(inp.child, learn)
         return out
 
@@ -737,6 +749,7 @@ async def parent_report(child: str = Query(...), token: str = Query(""), days: i
         "answers": len(sessions),
         "accuracy": round(sum(1 for s in sessions if s.get("correct")) / len(sessions), 2) if sessions else None,
         "by_topic": {_topic_name(t): {"count": n, "accuracy": round(a, 2)} for t, (n, a) in acc.items()},
+        "error_types": _error_type_stats(sessions),
         "trends": _trend_by_topic(sessions),
         "adjust_log": learn.get("adjust_log", [])[-20:],
         "by_week": _by_week(sessions),
@@ -849,6 +862,18 @@ def _streak_days(days_set):
         streak += 1
         d = datetime.date.fromordinal(d.toordinal() - 1)
     return streak
+
+
+def _error_type_stats(sessions):
+    """R113 错因分类统计:最近 14 天错题按 概念/计算/审题 聚合(学而思式归因)。"""
+    out = {}
+    for s in sessions:
+        if s.get("correct") or _days_ago(s.get("ts", "")) > 14:
+            continue
+        et = s.get("error_type")
+        if et:
+            out[et] = out.get(et, 0) + 1
+    return out
 
 
 def _trend_by_topic(sessions):
