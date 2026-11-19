@@ -217,6 +217,15 @@ const listenHTML = `
   <div class="dhead"><h3>🎧 伴听模式</h3><button onclick="stopListen();document.getElementById('listenPanel').classList.add('hidden')">✕</button></div>
   <p style="font-size:13px;color:#5a7a96;margin:8px 0">音乐只在<b>这台设备</b>上出声(给你自己听),不会打断孩子的学习会话,也不会从孩子的音箱里播放。</p>
   <label class="drow" style="color:#1c3a52">音量 <input type="range" id="listenVol" min="0" max="100" value="70"><span id="listenVolV">70</span></label>
+  <label class="drow" style="color:#1c3a52">定时停止
+    <select id="sleepMin">
+      <option value="0">不自动停止</option>
+      <option value="15">15 分钟</option>
+      <option value="30">30 分钟</option>
+      <option value="60">60 分钟</option>
+    </select>
+  </label>
+  <label class="drow" style="color:#1c3a52">循环播放 <input type="checkbox" id="loopChk"></label>
   <div id="listenList" style="max-height:50vh;overflow:auto"></div>`;
 function openListen() {
   let panel = document.getElementById("listenPanel");
@@ -246,13 +255,24 @@ function openListen() {
   }).catch(() => list.innerHTML = "加载失败");
 }
 let listenAudio = null;
+let sleepTimer = null;
 function playListen(file) {
   stopListen();
   listenAudio = new Audio("/music-audio/" + file);
   listenAudio.volume = Number((document.getElementById("listenVol") || { value: 70 }).value) / 100;
+  listenAudio.loop = document.getElementById("loopChk").checked;
+  armSleepTimer();
   listenAudio.play().catch(() => {});
 }
-function stopListen() { if (listenAudio) { listenAudio.pause(); listenAudio = null; } }
+function armSleepTimer() {
+  if (sleepTimer) { clearTimeout(sleepTimer); sleepTimer = null; }
+  const mins = Number((document.getElementById("sleepMin") || { value: 0 }).value);
+  if (mins > 0) sleepTimer = setTimeout(() => stopListen(), mins * 60000);
+}
+function stopListen() {
+  if (sleepTimer) { clearTimeout(sleepTimer); sleepTimer = null; }
+  if (listenAudio) { listenAudio.pause(); listenAudio = null; }
+}
 document.addEventListener("click", e => {
   if (e.target.dataset && e.target.dataset.listen !== undefined) openListen();
 });
@@ -262,6 +282,10 @@ document.addEventListener("input", e => {
     document.getElementById("listenVolV").textContent = e.target.value;
     if (listenAudio) listenAudio.volume = v;
   }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "loopChk" && listenAudio) listenAudio.loop = e.target.checked;
+  if (e.target.id === "sleepMin") armSleepTimer();
 });
 window.addEventListener("beforeunload", stopListen);
 </script>

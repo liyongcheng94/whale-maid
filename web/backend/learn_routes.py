@@ -596,6 +596,19 @@ async def words_daily(child: str = Query(...)):
     return {"date": today, "words": picked}
 
 
+@router.get("/learn/today")
+async def learn_today(child: str = Query(...)):
+    """R125 今日学情(孩子端自己的旅程视图):作答数/分钟/正确率/XP/星星。"""
+    learn = store.load_learn(child)
+    today = time.strftime("%Y-%m-%d")
+    todays = [s for s in learn.get("sessions", []) if str(s.get("ts", "")).startswith(today)]
+    n = len(todays)
+    minutes = round(sum(s.get("time_s", 0) for s in todays) / 60, 1)
+    acc = round(sum(1 for s in todays if s.get("correct")) / n, 2) if n else None
+    return {"child": child, "answers": n, "minutes": minutes, "accuracy": acc,
+            "xp": learn.get("xp", 0), "stars": sum(l.get("stars", 0) for l in learn.get("levels", {}).values())}
+
+
 @router.get("/learn/wrongbook")
 async def wrongbook(child: str = Query(...)):
     """R29 错题本:近期做错的题去重列表(按最后错误时间倒序,最多 20 题)。"""

@@ -92,6 +92,15 @@
   </div>
 
   <div id="home">
+    <div class="card" id="todayCard">
+      <h3>今天的我</h3>
+      <div class="row" style="display:flex;gap:10px;text-align:center">
+        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:12px;padding:8px"><b id="tAns">0</b><div style="font-size:12px;color:#bfe4ff">作答</div></div>
+        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:12px;padding:8px"><b id="tMin">0</b><div style="font-size:12px;color:#bfe4ff">分钟</div></div>
+        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:12px;padding:8px"><b id="tAcc">–</b><div style="font-size:12px;color:#bfe4ff">正确率</div></div>
+        <div style="flex:1;background:rgba(255,255,255,.1);border-radius:12px;padding:8px"><b id="tStars">0</b><div style="font-size:12px;color:#bfe4ff">⭐ 总数</div></div>
+      </div>
+    </div>
     <div class="card">
       <h3>学习地图 · 人教版四年级下册</h3>
       <div id="map"></div>
@@ -367,6 +376,17 @@ function listenRead(target) {
 }
 $("readBtn").addEventListener("click", readPractice);
 
+/* R125 今日学情(孩子端自己的旅程) */
+async function loadToday() {
+  try {
+    const d = await (await fetch("/api/learn/today?child=" + encodeURIComponent(CHILD))).json();
+    $("tAns").textContent = d.answers;
+    $("tMin").textContent = d.minutes;
+    $("tAcc").textContent = d.accuracy === null ? "–" : Math.round(d.accuracy * 100) + "%";
+    $("tStars").textContent = d.stars;
+  } catch (_) {}
+}
+
 /* R46 技能树 */
 async function loadTree() {
   const tree = $("tree");
@@ -423,7 +443,7 @@ async function loadMap() {
     $("wrongbookBtn").textContent = `📕 错题本(${d.items.length})`;
   }).catch(() => {});
 }
-loadMap(); loadTree(); loadAchv();
+loadMap(); loadTree(); loadAchv(); loadToday(); loadToday();
 
 /* 关卡玩法(自适应) */
 async function startLevel(levelId, levelName) {
@@ -529,7 +549,7 @@ function showSummary(r) {
     <button class="done-btn" onclick="closeOverlay()">回地图</button>`;
   $("play").style.display = "none";
   $("home").style.display = "block";
-  loadMap(); loadTree(); loadAchv(); loadWrongbook();
+  loadMap(); loadTree(); loadAchv(); loadToday(); loadToday(); loadWrongbook();
 }
 function closeOverlay() { $("overlay").style.display = "none"; }
 
