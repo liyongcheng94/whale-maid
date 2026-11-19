@@ -229,7 +229,9 @@ $("englishBtn").addEventListener("click", async () => {
       if (!(await playUrl(`/egg-audio/word_${w.word}_zh.mp3`))) await speak(w.zh);
       if (!(await playUrl(`/egg-audio/word_${w.word}_sent.mp3`))) await speak(w.sentence);
     }
-    bubble("今天的单词学完啦!明天来新的哦。");
+    bubble("今天的单词学完啦!接下来试着跟读一遍?");
+    await readPractice("en");
+    return;
   } catch (_) { bubble("英语角被海浪挡了一下,再试一次。"); }
 });
 
@@ -255,10 +257,17 @@ function matchWord(transcript, target) {
   if (!t || !g) return false;
   return t.includes(g) || g.includes(t);
 }
-async function readPractice() {
+async function readPractice(mode) {
   pokeOff();
   try {
-    readList = await (await fetch("/api/learn/chinese/daily?child=" + encodeURIComponent(CHILD))).json();
+    if (mode === "en") {
+      const d = await (await fetch("/api/learn/words/daily?child=" + encodeURIComponent(CHILD))).json();
+      readList = { words: d.words.map(w => ({ word: w.word })) };
+      readLang = "en-US";
+    } else {
+      readList = await (await fetch("/api/learn/chinese/daily?child=" + encodeURIComponent(CHILD))).json();
+      readLang = "zh-CN";
+    }
     readIdx = 0;
     const ov = $("overlay");
     ov.style.display = "flex";
@@ -273,14 +282,17 @@ function showReadWord() {
   const w = readList.words[readIdx];
   $("rpWord").textContent = w.word;
   $("rpFb").textContent = "点「开始跟读」,大声读出来!";
-  playUrl("/egg-audio/chinese_" + w.word + ".mp3").then(ok => { if (!ok) speak(w.word); });
+  const audio = readLang === "en-US"
+    ? "/egg-audio/word_" + w.word + "_en.mp3"
+    : "/egg-audio/chinese_" + w.word + ".mp3";
+  playUrl(audio).then(ok => { if (!ok) speak(w.word); });
   $("rpMic").onclick = () => listenRead(w.word);
 }
 function listenRead(target) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { $("rpFb").textContent = "这台浏览器听不见声音,照着屏幕读就好!"; return; }
   const rec = new SR();
-  rec.lang = "zh-CN"; rec.interimResults = false; rec.maxAlternatives = 3;
+  rec.lang = readLang || "zh-CN"; rec.interimResults = false; rec.maxAlternatives = 3;
   $("rpFb").textContent = "我在听,请读…";
   rec.onresult = e => {
     const ok = Array.from(e.results[0]).some(r => matchWord(r.transcript, target));
