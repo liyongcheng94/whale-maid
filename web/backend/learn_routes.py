@@ -484,18 +484,20 @@ async def learn_daily(child: str = Query(...)):
              if ev["correct"] and ev["days"] >= 3]
     rng = random.Random(f"daily-{child}-{today}-xp{learn.get('xp', 0)}")
     pool = sorted(_ALL_Q.keys())
-    picked = []
+    picked = []  # (qid, kind): review=错题复习 / srs=衰减重测 / new=新题(R126)
     if wrong_recent:
-        picked.append(rng.choice(wrong_recent))       # 错题优先位(次日必复习)
+        picked.append((rng.choice(wrong_recent), "review"))       # 错题优先位(次日必复习)
     if decay:
         d_pick = rng.choice(sorted(decay))
-        if d_pick not in picked:
-            picked.append(d_pick)                      # SRS 衰减位
-    picked += [q for q in rng.sample(pool, 4) if q not in picked][:4 - len(picked)]
+        if all(d_pick != p[0] for p in picked):
+            picked.append((d_pick, "srs"))                        # SRS 衰减位
+    picked += [(q, "new") for q in rng.sample(pool, 4)
+               if all(q != p[0] for p in picked)][:4 - len(picked)]
     picked = picked[:4]
     return {"date": today, "done": bool(learn.get("daily_done", {}).get(today)),
-            "review": bool(wrong_recent) and picked[0] in wrong_recent,
-            "questions": [_question_payload(_ALL_Q[qid], _ALL_Q[qid]["tier"]) for qid in picked]}
+            "review": bool(wrong_recent) and picked[0][0] in wrong_recent,
+            "questions": [dict(_question_payload(_ALL_Q[qid], _ALL_Q[qid]["tier"]), kind=kind)
+                          for qid, kind in picked]}
 
 
 # ---------------- 家长端(PIN + token) ----------------

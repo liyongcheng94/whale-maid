@@ -117,6 +117,8 @@
         <button class="g" data-say="我们来背古诗吧">📜 诗词画廊</button>
         <button class="g" data-say="我们来猜谜语吧">🧩 解谜工坊</button>
         <button class="g" data-say="我们来玩猜动物游戏">🐾 特性研究所</button>
+        <button class="g" id="chineseBtn">📖 语文角</button>
+        <button class="g" id="pinyinBtn">📝 拼音写词</button>
         <button class="g" id="englishBtn">🔤 英语角</button>
         <button class="g" id="readBtn">🎤 跟读练习</button>
         <button class="g" data-say="随便来首歌听">🎵 音乐角</button>
@@ -241,6 +243,49 @@ $("englishBtn").addEventListener("click", async () => {
     return;
   } catch (_) { bubble("英语角被海浪挡了一下,再试一次。"); }
 });
+
+/* R124 看拼音写词(洪恩识字对标):看拼音→输入汉字→即时判分 */
+let pyState = null;
+$("pinyinBtn").addEventListener("click", async () => {
+  pokeOff();
+  try {
+    const d = await (await fetch("/api/learn/chinese/daily?child=" + encodeURIComponent(CHILD))).json();
+    pyState = { list: d.words, i: 0, right: 0 };
+    showPinyin();
+  } catch (_) { bubble("拼音写词被海浪挡了一下,再试一次。"); }
+});
+function showPinyin() {
+  const w = pyState.list[pyState.i];
+  const ov = $("overlay");
+  ov.style.display = "flex";
+  $("overlayBody").innerHTML = `<h2>📝 看拼音写词 ${pyState.i + 1}/${pyState.list.length}</h2>
+    <p style="font-size:34px;font-weight:bold;letter-spacing:6px;color:#ffd39e">${w.pinyin}</p>
+    <input id="pyAns" autocomplete="off" placeholder="写出这个词语" style="width:100%;min-height:56px;font-size:20px;text-align:center;border:none;border-radius:12px">
+    <p id="pyFb" style="min-height:26px"></p>
+    <button class="done-btn" id="pyGo">提交</button>`;
+  $("pyAns").focus();
+  $("pyGo").onclick = () => {
+    const ok = normWord($("pyAns").value) === normWord(w.word);
+    if (ok) {
+      pyState.right++;
+      $("pyFb").textContent = "✓ 正确!" + w.word;
+      spawnParticles("hearts", innerWidth / 2, innerHeight / 2.2);
+    } else {
+      $("pyFb").textContent = "正确是:" + w.word + " —— 再试试下一个。";
+    }
+    $("pyGo").disabled = true;
+    setTimeout(() => {
+      pyState.i++;
+      if (pyState.i < pyState.list.length) showPinyin();
+      else {
+        $("overlayBody").innerHTML = `<h2>拼音写词完成 ✓</h2>
+          <p>答对 ${pyState.right}/${pyState.list.length}。</p>
+          <button class="done-btn" onclick="closeOverlay();loadMap()">好的</button>`;
+      }
+    }, 1100);
+  };
+  $("pyAns").addEventListener("keydown", ev => { if (ev.key === "Enter") $("pyGo").click(); });
+}
 
 /* R103 语文角:每日 3 词跟读(词+课文句,预生成音频) */
 $("chineseBtn").addEventListener("click", async () => {
@@ -502,6 +547,7 @@ function showDailyQ() {
   ov.style.display = "flex";
   $("overlayBody").innerHTML = `
     <h2>每日挑战 ${dailyState.i + 1}/${dailyState.list.length}</h2>
+    <p style="font-size:13px;color:#9fc6e8">${q.kind === "review" ? "🔁 错题复习" : q.kind === "srs" ? "🔄 记忆巩固" : "✨ 新题"}</p>
     <p style="font-size:22px;font-weight:bold">${q.prompt}</p>
     <input id="dailyAns" inputmode="decimal" autocomplete="off" placeholder="输入答案"
       style="width:100%;min-height:56px;font-size:20px;border-radius:12px;border:none;padding:10px 16px;margin-top:8px">
