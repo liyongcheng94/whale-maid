@@ -2,15 +2,55 @@
   "version": "1.0-g4s2",
   "comment": "语文角(2026-11-19 R103):锚定统编语文四年级下册词语与课文句(天窗/琥珀/纳米技术/白桦/古诗)。音频 chinese_{word}.mp3 与 chinese_{word}_sent.mp3 由 make_egg_audio 扫描本文件预生成。",
   "words": [
-    { "word": "篱落", "sentence": "篱落疏疏一径深。" },
-    { "word": "蜻蜓", "sentence": "惟有蜻蜓蛱蝶飞。" },
-    { "word": "耕耘", "sentence": "爷爷在田间耕耘。" },
-    { "word": "蝙蝠", "sentence": "蝙蝠在夜里灵巧地飞行。" },
-    { "word": "纳米", "sentence": "纳米技术就在我们身边。" },
-    { "word": "白桦", "sentence": "在我的窗前,有一棵白桦。" },
-    { "word": "慰藉", "sentence": "小小的天窗是孩子们唯一的慰藉。" },
-    { "word": "琥珀", "sentence": "琥珀是古代树脂的化石。" },
-    { "word": "敏锐", "sentence": "猫的听觉十分敏锐。" },
-    { "word": "蜿蜒", "sentence": "万里长城蜿蜒盘旋。" }
+    {
+      "word": "篱落",
+      "sentence": "篱落疏疏一径深。",
+      "pinyin": "lí luò"
+    },
+    {
+      "word": "蜻蜓",
+      "sentence": "惟有蜻蜓蛱蝶飞。",
+      "pinyin": "qīng tíng"
+    },
+    {
+      "word": "耕耘",
+      "sentence": "爷爷在田间耕耘。",
+      "pinyin": "gēng yún"
+    },
+    {
+      "word": "蝙蝠",
+      "sentence": "蝙蝠在夜里灵巧地飞行。",
+      "pinyin": "biān fú"
+    },
+    {
+      "word": "纳米",
+      "sentence": "纳米技术就在我们身边。",
+      "pinyin": "nà mǐ"
+    },
+    {
+      "word": "白桦",
+      "sentence": "在我的窗前,有一棵白桦。",
+      "pinyin": "bái huà"
+    },
+    {
+      "word": "慰藉",
+      "sentence": "小小的天窗是孩子们唯一的慰藉。",
+      "pinyin": "wèi jiè"
+    },
+    {
+      "word": "琥珀",
+      "sentence": "琥珀是古代树脂的化石。",
+      "pinyin": "hǔ pò"
+    },
+    {
+      "word": "敏锐",
+      "sentence": "猫的听觉十分敏锐。",
+      "pinyin": "mǐn ruì"
+    },
+    {
+      "word": "蜿蜒",
+      "sentence": "万里长城蜿蜒盘旋。",
+      "pinyin": "wān yán"
+    }
   ]
 }

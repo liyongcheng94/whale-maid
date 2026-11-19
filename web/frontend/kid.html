@@ -130,7 +130,10 @@
     <div class="card">
       <div><span id="qTier"></span><span id="progress"></span></div>
       <div id="qPrompt"></div>
-      <input id="answer" inputmode="decimal" autocomplete="off" placeholder="输入你的答案">
+      <div style="display:flex;gap:10px;align-items:center">
+        <input id="answer" inputmode="decimal" autocomplete="off" placeholder="输入你的答案" style="flex:1">
+        <button id="voiceAns" aria-label="语音作答" title="语音作答" style="min-height:56px;min-width:56px;border:none;border-radius:12px;background:#0e5a8f;color:#fff;font-size:22px;cursor:pointer">🎤</button>
+      </div>
       <button id="submit">提交答案</button>
       <div id="feedback"></div>
       <div id="scaffold"></div>
@@ -211,8 +214,12 @@ async function loadAchv() {
     rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px">
       <span>📚</span><span style="flex:1;font-size:15px">累计作答</span>
       <span style="font-size:13px;color:#ffd39e">${d.total_answers} 题 · 错题还剩 ${d.wrong_left}</span></div>`);
-    d.badges.forEach(b => rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,211,158,.18);border:1px solid #ffd39e;border-radius:12px;padding:8px 12px">
-      <span>🏅</span><span style="flex:1;font-size:15px">${b}</span></div>`));
+    d.badge_dates = d.badge_dates || {};
+    d.badges.forEach(b => {
+      const dt = (d.badge_dates || {})[b] ? ` · ${d.badge_dates[b]}` : "";
+      rows.push(`<div style="display:flex;gap:10px;align-items:center;background:rgba(255,211,158,.18);border:1px solid #ffd39e;border-radius:12px;padding:8px 12px">
+      <span>🏅</span><span style="flex:1;font-size:15px">${b}</span><span style="font-size:11px;color:#9fc6e8">${dt}</span></div>`);
+    });
     el.innerHTML = rows.join("");
   } catch (_) { el.innerHTML = '<div style="opacity:.6;font-size:13px">成就墙加载失败</div>'; }
 }
@@ -241,7 +248,7 @@ $("chineseBtn").addEventListener("click", async () => {
   try {
     const d = await (await fetch("/api/learn/chinese/daily?child=" + encodeURIComponent(CHILD))).json();
     for (const w of d.words) {
-      bubble(`📖 ${w.word}`, 15000);
+      bubble(`📖 ${w.word}(${w.pinyin || ""})`, 15000);
       if (!(await playUrl(`/egg-audio/chinese_${w.word}.mp3`))) await speak(w.word);
       if (!(await playUrl(`/egg-audio/chinese_${w.word}_sent.mp3`))) await speak(w.sentence);
     }
@@ -251,8 +258,11 @@ $("chineseBtn").addEventListener("click", async () => {
 
 /* R106 跟读练习(洪恩式口语反馈):听词→跟读→即时判分 */
 let readList = null, readIdx = 0;
+function normWord(s) {
+  return String(s).toLowerCase().replace(/[\s.,!?。,!?;、·'"-]/g, "");
+}
 function matchWord(transcript, target) {
-  const norm = s => String(s).toLowerCase().replace(/[\s.,!?。,!?;、·'"-]/g, "");
+  const norm = s => normWord(s);
   const t = norm(transcript), g = norm(target);
   if (!t || !g) return false;
   return t.includes(g) || g.includes(t);
@@ -295,10 +305,13 @@ function listenRead(target) {
   rec.lang = readLang || "zh-CN"; rec.interimResults = false; rec.maxAlternatives = 3;
   $("rpFb").textContent = "我在听,请读…";
   rec.onresult = e => {
+    const exact = Array.from(e.results[0]).some(r => norm(r.transcript) === norm(target));
     const ok = Array.from(e.results[0]).some(r => matchWord(r.transcript, target));
-    if (ok) {
-      $("rpFb").textContent = "读得真棒!✨";
+    if (exact) {
+      $("rpFb").textContent = "完美!发音和书本一模一样!✨✨";
       spawnParticles("hearts", innerWidth / 2, innerHeight / 2);
+    } else if (ok) {
+      $("rpFb").textContent = "读对了!再来一遍会更熟练。";
     } else {
       const said = e.results[0][0].transcript;
       $("rpFb").textContent = "再读一遍,慢一点、声音大一点。(听到的是:" + said + ")";
@@ -406,6 +419,24 @@ function updateProgress(count, total) {
   $("progress").textContent = $("progress").textContent.replace(/ · \d+\/\d+/, "") + ` · ${count}/${total}`;
 }
 $("submit").addEventListener("click", submitAnswer);
+/* R116 语音作答:按住说答案(数字),识别结果填入输入框 */
+$("voiceAns").addEventListener("click", () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $("feedback").textContent = "这台浏览器听不见声音,请手动输入。"; return; }
+  try {
+    const rec = new SR();
+    rec.lang = "zh-CN"; rec.interimResults = false;
+    $("feedback").className = "no";
+    $("feedback").textContent = "我在听,请说出答案…";
+    rec.onresult = e => {
+      const said = e.results[0][0].transcript;
+      const m = said.match(/\d+/);
+      if (m) { $("answer").value = m[0]; $("feedback").textContent = "听到:" + said; }
+      else $("feedback").textContent = "没听到数字,再试一次或手动输入。";
+    };
+    rec.start();
+  } catch (_) { $("feedback").textContent = "语音作答不可用,请手动输入。"; }
+});
 $("answer").addEventListener("keydown", e => { if (e.key === "Enter") submitAnswer(); });
 async function submitAnswer() {
   const text = $("answer").value.trim();

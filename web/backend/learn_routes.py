@@ -205,13 +205,16 @@ MILESTONE_BADGES = {"streak7": "七日不辍", "wrongbook_clear": "错题清零�
 
 
 def _milestone_badges(learn: dict):
-    """R49-R51 里程碑徽章:连续 7 天/错题清零/累计百题(只增不消耗)。"""
+    """R49-R51/R120 里程碑徽章:连续 7 天/错题清零/累计百题(只增不消耗,带获得日期)。"""
     badges = learn.setdefault("badges", [])
+    dates = learn.setdefault("badge_dates", {})
     streak = _streak_days({s.get("ts", "")[:10] for s in learn.get("sessions", [])})
     if streak >= 7 and MILESTONE_BADGES["streak7"] not in badges:
         badges.append(MILESTONE_BADGES["streak7"])
+        dates[MILESTONE_BADGES["streak7"]] = time.strftime("%Y-%m-%d")
     if len(learn.get("sessions", [])) >= 100 and MILESTONE_BADGES["answers100"] not in badges:
         badges.append(MILESTONE_BADGES["answers100"])
+        dates[MILESTONE_BADGES["answers100"]] = time.strftime("%Y-%m-%d")
     return badges
 
 
@@ -244,6 +247,7 @@ def _unit_badges(learn: dict):
         badge = UNIT_BADGES.get(u["id"])
         if badge and badge not in badges:
             badges.append(badge)
+            learn.setdefault("badge_dates", {})[badge] = time.strftime("%Y-%m-%d")  # R120
     return badges
 
 
@@ -532,6 +536,7 @@ async def achievements(child: str = Query(...)):
         d = datetime.date.fromordinal(d.toordinal() - 1)
     wrong_left = len(_wrongbook_qids(learn))
     return {"child": child, "badges": learn.get("badges", []),
+            "badge_dates": learn.get("badge_dates", {}),
             "streak_days": streak, "daily_streak": daily_streak,
             "total_answers": len(learn.get("sessions", [])),
             "wrong_left": wrong_left}
