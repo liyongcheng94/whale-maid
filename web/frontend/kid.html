@@ -654,10 +654,14 @@ function loadWrongbook() {
       const tierCN = { basic: "基础", standard: "标准", challenge: "挑战" };
       const orderT = { basic: 0, standard: 1, challenge: 2 };
       d.items.sort((a, b) => orderT[a.tier] - orderT[b.tier]);
+      // R129 按知识点分组(学而思式错题本)
+      const byTopic = {};
+      d.items.forEach(i => { (byTopic[i.topic] = byTopic[i.topic] || []).push(i); });
       box.innerHTML = d.items.length
-        ? d.items.map(i => `<div class="card" style="margin:8px 0;cursor:pointer" data-qid="${i.qid}" data-prompt="${i.prompt}" data-level="${i.level}">
+        ? Object.entries(byTopic).map(([topic, items]) =>
+          `<div style="margin:10px 0"><div style="font-size:13px;color:#ffd39e;margin-bottom:4px">📚 ${topic}(${items.length} 题)</div>${items.map(i => `<div class="card" style="margin:8px 0;cursor:pointer" data-qid="${i.qid}" data-prompt="${i.prompt}" data-level="${i.level}">
             <b>【${tierCN[i.tier] || i.tier}】</b>${i.prompt}
-            <div style="font-size:12px;color:#9fc6e8">${i.ts} · 点我重做</div></div>`).join("")
+            <div style="font-size:12px;color:#9fc6e8">${i.ts} · 点我重做</div></div>`).join("")}</div>`).join("")
         : '<div style="opacity:.7;font-size:14px">错题本空空如也,太厉害了!</div>';
       box.querySelectorAll("[data-qid]").forEach(el =>
         el.addEventListener("click", () => redoWrong(el.dataset.qid, el.dataset.prompt, el.dataset.level)));

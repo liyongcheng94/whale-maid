@@ -620,6 +620,7 @@ async def wrongbook(child: str = Query(...)):
             seen.add(qid)
             q = _ALL_Q[qid]
             wrongs.append({"qid": qid, "prompt": q["prompt"], "tier": q["tier"], "level": q["level"],
+                           "topic": _topic_name(q["topic"]),
                            "scaffold": q.get("scaffold"), "ts": s.get("ts", "")[:10]})
         if len(wrongs) >= 20:
             break
@@ -743,6 +744,55 @@ async def parent_purge(child: str, token: str = Query("")):
     if existed:
         p.unlink()
     return {"purged": existed, "child": child}
+
+
+class WeeklyIn(BaseModel):
+    child: str
+
+
+@router.post("/parent/weekly-summary")
+async def weekly_summary(inp: WeeklyIn, token: str = Query("")):
+    """R130 学而思式周报:聚合本周数据 → DeepSeek 生成描述性总结(不给评分,只讲事实与建议)。"""
+    _require_parent(token)
+    learn = store.load_learn(inp.child)
+    prof = next((c for c in PROFILES["children"] if c["id"] == inp.child), {})
+    sessions = [s for s in learn.get("sessions", []) if _within_days(s.get("ts", ""), 7)]
+    if not sessions:
+        return {"summary": f"{prof.get('name', inp.child)} 这周还没有学习记录,可以先从第一关逛起。"}
+    acc = _topic_accuracy(sessions)
+    minutes = round(sum(s.get("time_s", 0) for s in sessions) / 60, 1)
+    total = len(sessions)
+    right = sum(1 for s in sessions if s.get("correct"))
+    facts = {
+        "name": prof.get("name", inp.child), "minutes": minutes, "answers": total,
+        "accuracy": round(right / total, 2) if total else 0,
+        "strong": [_topic_name(t) for t, (n, a) in acc.items() if n >= 3 and a >= 0.8],
+        "support": [_topic_name(t) for t, (n, a) in acc.items() if n >= 2 and a < 0.6],
+        "streak": _streak_days({s.get("ts", "")[:10] for s in sessions}),
+        "games": learn.get("games", {}),
+    }
+    summary = None
+    if DEEPSEEK_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.post(
+                    DEEPSEEK_URL,
+                    headers={"Authorization": f"Bearer {DEEPSEEK_KEY}"},
+                    json={"model": DEEPSEEK_MODEL, "thinking": DEEPSEEK_THINKING,
+                          "max_tokens": 150, "temperature": 0.6,
+                          "messages": [
+                              {"role": "system", "content": "你是小学四年级的学习顾问,给家长写一段 3~4 句的本周学习总结。要求:用描述性语言讲事实与建议,不用评分标签,不用低幼语气,不夸大。结构:先说整体节奏,再说强项,再说下周建议(聚焦一个点)。"},
+                              {"role": "user", "content": f"数据:{json.dumps(facts, ensure_ascii=False)}"}]})
+            r.raise_for_status()
+            summary = (r.json()["choices"][0]["message"]["content"] or "").strip()[:400] or None
+        except Exception as e:
+            print(f"[report] weekly summary 失败: {e!r}")
+    if not summary:
+        summary = (f"{facts['name']} 这周学习了 {facts['minutes']:g} 分钟、作答 {facts['answers']} 题,"
+                   f"正确率 {int(facts['accuracy'] * 100)}%,连续 {facts['streak']} 天。"
+                   + (f"「{'」「'.join(facts['strong'])}」表现稳定。" if facts["strong"] else "")
+                   + (f"下周可以陪练「{'」「'.join(facts['support'])}」。" if facts["support"] else ""))
+    return {"summary": summary, "facts": facts}
 
 
 @router.get("/parent/check")

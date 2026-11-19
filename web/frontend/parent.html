@@ -161,9 +161,11 @@ async function showDash(tok) {
         </div>
         <div class="bars">${bars}</div>
         <div class="desc">${c.summary}</div>
+        <div id="weekly-${c.child}" class="desc" style="display:none;background:#fff8e6"></div>
         ${c.error_types && Object.keys(c.error_types).length ? `<div style="font-size:13px;margin-top:8px">错因统计(近 7 天):${Object.entries(c.error_types).map(([t, n]) => `${t} ×${n}`).join("、")}</div>` : ""}
         ${c.pending.length ? `<div class="warn">待处理:${c.pending.join(";")}</div>` : ""}
-        <div class="acts2"><button data-rename="${c.child}" data-old="${c.name}">✏️ 改名</button>
+        <div class="acts2"><button data-weekly="${c.child}">🤖 AI 周报</button>
+          <button data-rename="${c.child}" data-old="${c.name}">✏️ 改名</button>
           <button data-preview="${c.child}">只读预览孩子视图</button>
           <button data-report="${c.child}">📄 下载学习报告</button>
           <button data-listen="${c.child}">🎧 伴听模式</button>
@@ -173,6 +175,21 @@ async function showDash(tok) {
   });
   cards.querySelectorAll("[data-preview]").forEach(b =>
     b.addEventListener("click", () => preview(b.dataset.preview)));
+  cards.querySelectorAll("[data-weekly]").forEach(b =>
+    b.addEventListener("click", async () => {
+      const cid = b.dataset.weekly;
+      const box = document.getElementById("weekly-" + cid);
+      if (!box) return;
+      box.style.display = "block";
+      box.textContent = "AI 正在生成本周总结…";
+      try {
+        const r = await fetch("/api/parent/weekly-summary", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ child: cid }) });
+        const d = await r.json();
+        box.textContent = d.summary;
+      } catch (_) { box.textContent = "生成失败,稍后再试。"; }
+    }));
   cards.querySelectorAll("[data-report]").forEach(b =>
     b.addEventListener("click", () => {
       const url = `/api/parent/report?child=${encodeURIComponent(b.dataset.report)}&days=7&token=${encodeURIComponent(token)}`;
