@@ -161,6 +161,7 @@ async function showDash(tok) {
         </div>
         <div class="bars">${bars}</div>
         <div class="desc">${c.summary}</div>
+        ${c.error_types && Object.keys(c.error_types).length ? `<div style="font-size:13px;margin-top:8px">错因统计(近 7 天):${Object.entries(c.error_types).map(([t, n]) => `${t} ×${n}`).join("、")}</div>` : ""}
         ${c.pending.length ? `<div class="warn">待处理:${c.pending.join(";")}</div>` : ""}
         <div class="acts2"><button data-rename="${c.child}" data-old="${c.name}">✏️ 改名</button>
           <button data-preview="${c.child}">只读预览孩子视图</button>

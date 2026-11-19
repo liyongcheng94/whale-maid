@@ -803,6 +803,7 @@ async def parent_overview(token: str = Query("")):
         last_days = min((_days_ago(s.get("ts", "")) for s in sessions), default=999)
         streak = _streak_days({s.get("ts", "")[:10] for s in sessions})
         acc = _topic_accuracy(week)
+        error_types = _error_type_stats(week)  # R122 本周错因统计
         strong = [_topic_name(t) for t, (n, a) in acc.items() if n >= 5 and a >= 0.8]
         support = [_topic_name(t) for t, (n, a) in acc.items() if n >= 3 and a < 0.6]
         pending = [f"「{_topic_name(t)}」连续答错,建议陪练" for t, (n, a) in acc.items() if n >= 2 and a < 0.4]
@@ -818,6 +819,7 @@ async def parent_overview(token: str = Query("")):
             "streak_days": streak, "week_answers": len(week),
             "activity_7d": _activity_7d(sessions),
             "strong": strong, "support": support, "pending": pending,
+            "error_types": error_types,
             "summary": _descriptive(c["name"], minutes, prev_minutes, streak, strong, support, pending),
         })
     feed = sorted(learn_all_adjust(), key=lambda e: e.get("ts", ""), reverse=True)[:10]
