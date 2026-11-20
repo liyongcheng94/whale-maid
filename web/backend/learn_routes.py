@@ -629,8 +629,14 @@ async def learn_today(child: str = Query(...)):
     n = len(todays)
     minutes = round(sum(s.get("time_s", 0) for s in todays) / 60, 1)
     acc = round(sum(1 for s in todays if s.get("correct")) / n, 2) if n else None
+    error_types = {}
+    for s in todays:
+        et = s.get("error_type")
+        if et:
+            error_types[et] = error_types.get(et, 0) + 1
     return {"child": child, "answers": n, "minutes": minutes, "accuracy": acc,
-            "xp": learn.get("xp", 0), "stars": sum(l.get("stars", 0) for l in learn.get("levels", {}).values())}
+            "xp": learn.get("xp", 0), "stars": sum(l.get("stars", 0) for l in learn.get("levels", {}).values()),
+            "error_types": error_types}
 
 
 @router.get("/learn/wrongbook")

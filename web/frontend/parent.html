@@ -65,7 +65,7 @@
     <h1>小鲸灵学园 · 家长控制室</h1>
     <div class="acts" id="hdrActs">
       <button onclick="location.href='/'">回到头像墙</button>
-      <button id="logout">退出家长身份</button>
+      <button id="logout" aria-label="退出家长身份">退出家长身份</button>
     </div>
   </header>
 
@@ -73,7 +73,7 @@
     <h2 id="pinTitle">输入家长 PIN</h2>
     <p id="pinDesc">孩子端不会显示这个入口;PIN 只保存在家里这台主机上。4~6 位数字。</p>
     <input id="pin" inputmode="numeric" autocomplete="off" placeholder="••••">
-    <button id="pinGo">解锁</button>
+    <button id="pinGo" aria-label="解锁家长控制室">解锁</button>
     <div class="err" id="pinErr"></div>
   </div>
 
