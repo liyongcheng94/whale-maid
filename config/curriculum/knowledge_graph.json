@@ -315,6 +315,42 @@
         "question": "2、5、8、11 的下一个数是多少?",
         "answer": "14"
       }
+    },
+    {
+      "id": "m_symmetry",
+      "name": "轴对称与对称轴数量",
+      "domain": "图形与几何",
+      "grade": 4,
+      "semester": "下",
+      "chapter": "第7单元 图形的运动(二)",
+      "type": "conceptual",
+      "description": "认识轴对称图形,能数出常见图形的对称轴数量。",
+      "mastery_criteria": [
+        "能判断轴对称图形",
+        "能数出常见图形的对称轴数量"
+      ],
+      "diagnostic_question": {
+        "question": "正方形有几条对称轴?",
+        "answer": "4"
+      }
+    },
+    {
+      "id": "m_zhishu",
+      "name": "植树问题",
+      "domain": "综合与实践",
+      "grade": 4,
+      "semester": "下",
+      "chapter": "数学广角——鸡兔同笼(相邻专题)",
+      "type": "application",
+      "description": "两端都种时棵数=间隔+1;一端种棵数=间隔数;封闭图形棵数=间隔数。",
+      "mastery_criteria": [
+        "能区分三种植树情形",
+        "能解决锯木头/敲钟等变形问题"
+      ],
+      "diagnostic_question": {
+        "question": "20 米每隔 4 米种一棵(两端都种),种几棵?",
+        "answer": "6"
+      }
     }
   ],
   "edges": [
@@ -413,6 +449,18 @@
       "prerequisiteId": "m_addsub_rel",
       "strength": "hard",
       "reason": "等差规律依赖加减法"
+    },
+    {
+      "topicId": "m_symmetry",
+      "prerequisiteId": "m_triangle",
+      "strength": "soft",
+      "reason": "等腰/等边三角形的对称轴与三角形分类衔接"
+    },
+    {
+      "topicId": "m_zhishu",
+      "prerequisiteId": "m_muldiv_rel",
+      "strength": "hard",
+      "reason": "间隔数计算依赖乘除法"
     }
   ]
 }
