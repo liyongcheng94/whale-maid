@@ -596,6 +596,30 @@ async def words_daily(child: str = Query(...)):
     return {"date": today, "words": picked}
 
 
+class RedoIn(BaseModel):
+    child: str
+
+
+@router.post("/learn/redo-session")
+async def redo_session(inp: RedoIn):
+    """R134 错题重练模式:从错题本生成重练会话(最多 5 题,排除已翻正的)。"""
+    learn = store.load_learn(inp.child)
+    state = {}
+    for s in reversed(learn.get("sessions", [])):
+        qid = s.get("qid")
+        if qid and qid in _ALL_Q:
+            state[qid] = bool(s.get("correct"))
+    wrong = [qid for qid, ok in state.items() if not ok][:5]
+    if not wrong:
+        return {"empty": True, "questions": []}
+    session = "redo-" + str(int(time.time() * 1000))
+    LEARN_SESSIONS[(inp.child, session)] = {
+        "level": "redo", "seen": list(wrong), "count": 0, "streak": 0,
+        "results": [], "attempts": {}, "redo": True}
+    return {"empty": False, "session": session, "child": inp.child,
+            "questions": [_question_payload(_ALL_Q[qid], "standard") for qid in wrong]}
+
+
 @router.get("/learn/today")
 async def learn_today(child: str = Query(...)):
     """R125 今日学情(孩子端自己的旅程视图):作答数/分钟/正确率/XP/星星。"""
