@@ -250,6 +250,9 @@ def gate_tests():
 
 
 def main():
+    # Windows GBK 控制台打不出 ✓/✗,强制 utf-8 输出
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     gates = [v for k, v in sorted(globals().items()) if k.startswith("gate_") and callable(v) and getattr(v, "_is_gate", False)]
     print(f"whale-maid verify · {len(gates)} gates · root={ROOT}")
     print("-" * 60)

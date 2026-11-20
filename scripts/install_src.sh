@@ -30,7 +30,9 @@ if [ ! -d src/xiaozhi-esp32/.git ]; then
         tar xzf /tmp/xz32.tar.gz -C src/xiaozhi-esp32 --strip-components=1
         echo ">>> tarball 模式：直接应用 patch"
         cd src/xiaozhi-esp32
-        patch -p1 < "$ROOT/firmware/patches/0001-whale-maid-board.patch"
+        for p in "$ROOT"/firmware/patches/*.patch; do
+            patch -p1 < "$p"
+        done
         cd "$ROOT"
         echo ">>> 完成（tarball 模式，无 git 历史）。"
         exit 0
@@ -43,10 +45,12 @@ git describe --tags --exact-match 2>/dev/null | grep -q "$ESP32_TAG" || echo "!!
 if ! git rev-parse --verify -q whale-maid >/dev/null; then
     git checkout -q -b whale-maid
 fi
-echo ">>> 应用 whale-maid 板 patch ..."
-git apply --check "$ROOT/firmware/patches/0001-whale-maid-board.patch" 2>/dev/null \
-  && git apply "$ROOT/firmware/patches/0001-whale-maid-board.patch" \
-  || echo ">>> patch 已应用过或冲突（检查 main/boards/whale-maid 是否存在）"
+echo ">>> 应用固件 patch（0001 whale-maid 板 + 0002 waveshare-146 学园定制）..."
+for p in "$ROOT"/firmware/patches/*.patch; do
+    git apply --check "$p" 2>/dev/null \
+      && git apply "$p" \
+      || echo ">>> $(basename "$p") 已应用过或冲突"
+done
 cd "$ROOT"
 
 # ---------- 2. xiaozhi-esp32-server @v0.9.8 ----------

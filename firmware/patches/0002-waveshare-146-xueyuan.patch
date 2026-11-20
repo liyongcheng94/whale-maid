@@ -1,0 +1,62 @@
+0002-waveshare-146-xueyuan.patch · 学园实体机(微雪 ESP32-S3-Touch-LCD-1.46)固件自主化
+=====================================================================
+R138(2026-11-20)实机交付版,两处改动:
+  1. config.json:sdkconfig_append 注入 CONFIG_OTA_URL 指向自建服务端(192.168.1.9:8003),
+     激活服务端 OTA 通道(固件迭代不再依赖 USB 线)。
+  2. esp32-s3-touch-lcd-1.46.cc:触摸互动——TP INT(GPIO4)上升沿轮询任务,摸屏循环切换
+     鲸鱼娘表情(happy/laughing/surprised/loving/cool/sleepy)。
+     注意 IDF 6.1 枚举名 gpio_pullup_t::GPIO_PULLUP_ENABLE(旧名 GPIO_PULLUP 已移除)。
+烧录:merged bin → 0x0,表情资产 → assets 分区 0x800000(tools/rebuild_assets.py)。
+不修改任何引脚定义(OTA 变砖红线);与 0001(whale-maid 自制板)互不影响。
+
+diff --git a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json
+index af45cbc..19482fd 100644
+--- a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json
++++ b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json
+@@ -5,7 +5,9 @@
+     "builds": [
+         {
+             "name": "esp32-s3-touch-lcd-1.46",
+-            "sdkconfig_append": []
++            "sdkconfig_append": [
++                "CONFIG_OTA_URL=\"http://192.168.1.9:8003/xiaozhi/ota/\""
++            ]
+         }
+     ]
+ }
+\ No newline at end of file
+diff --git a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc
+index 1fde8f7..cff6bd8 100644
+--- a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc
++++ b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc
+@@ -218,6 +218,30 @@ private:
+                 gpio_set_level(PWR_Control_PIN, true);
+             }
+         }, this);
++
++        // 触摸互动:TP INT(GPIO4) 上升沿 → 循环切换表情(摸一下就有反应)
++        struct TpCtx { CustomBoard* board; };
++        static TpCtx ctx{this};
++        gpio_config_t tp_io = {};
++        tp_io.pin_bit_mask = 1ULL << TP_PIN_NUM_INT;
++        tp_io.mode = GPIO_MODE_INPUT;
++        tp_io.pull_up_en = GPIO_PULLUP_ENABLE;
++        gpio_config(&tp_io);
++        xTaskCreate([](void* arg) {
++            auto self = static_cast<TpCtx*>(arg)->board;
++            static const char* kEmo[] = {"happy", "laughing", "surprised", "loving", "cool", "sleepy"};
++            static int idx = 0;
++            int last = gpio_get_level(TP_PIN_NUM_INT);
++            for (;;) {
++                int lvl = gpio_get_level(TP_PIN_NUM_INT);
++                if (lvl == 1 && last == 0) {
++                    self->GetDisplay()->SetEmotion(kEmo[idx % 6]);
++                    idx++;
++                }
++                last = lvl;
++                vTaskDelay(pdMS_TO_TICKS(60));
++            }
++        }, "tp_emo", 4096, &ctx, 5, nullptr);
+     }
+ 
+ public:

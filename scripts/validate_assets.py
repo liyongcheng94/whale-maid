@@ -125,6 +125,9 @@ def validate(path: str, partition_size: int = 0x800000):
 
 
 def main():
+    # Windows GBK 控制台打不出 ✓/✗,强制 utf-8 输出
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     if len(sys.argv) < 2:
         print(__doc__)
         return 2
