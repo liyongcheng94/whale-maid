@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "chip_model": "esp32s3",
+  "display_config": {
+    "width": 412,
+    "height": 412,
+    "monochrome": false,
+    "color": "RGB565"
+  },
+  "emoji_collection": [
+    {
+      "name": "index",
+      "file": "index.json"
+    },
+    {
+      "name": "angry",
+      "file": "angry.png"
+    },
+    {
+      "name": "cool",
+      "file": "cool.png"
+    },
+    {
+      "name": "crying",
+      "file": "crying.png"
+    },
+    {
+      "name": "delicious",
+      "file": "delicious.png"
+    },
+    {
+      "name": "embarrassed",
+      "file": "embarrassed.png"
+    },
+    {
+      "name": "happy",
+      "file": "happy.png"
+    },
+    {
+      "name": "laughing",
+      "file": "laughing.png"
+    },
+    {
+      "name": "loving",
+      "file": "loving.png"
+    },
+    {
+      "name": "neutral",
+      "file": "neutral.png"
+    },
+    {
+      "name": "relaxed",
+      "file": "relaxed.png"
+    },
+    {
+      "name": "sad",
+      "file": "sad.png"
+    },
+    {
+      "name": "shocked",
+      "file": "shocked.png"
+    },
+    {
+      "name": "sleepy",
+      "file": "sleepy.png"
+    },
+    {
+      "name": "surprised",
+      "file": "surprised.png"
+    },
+    {
+      "name": "thinking",
+      "file": "thinking.png"
+    },
+    {
+      "name": "winking",
+      "file": "winking.png"
+    }
+  ],
+  "skin": {
+    "light": {
+      "text_color": "#FFFFFF",
+      "background_color": "#0B3D66"
+    },
+    "dark": {
+      "text_color": "#FFFFFF",
+      "background_color": "#072A4A"
+    }
+  }
+}
