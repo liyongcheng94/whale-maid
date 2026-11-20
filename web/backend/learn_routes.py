@@ -564,9 +564,15 @@ async def learn_tree(child: str = Query(...)):
             status = "learning"
         else:
             status = "locked"
+        # R142 先修标签
+        pr_edges = [e for e in KG["edges"] if e["topicId"] == t["id"] and e["strength"] == "hard"]
+        pr_name = None
+        if pr_edges:
+            pn = next((x for x in KG["topics"] if x["id"] == pr_edges[0]["prerequisiteId"]), None)
+            pr_name = pn["name"] if pn else None
         skills.append({"id": t["id"], "name": t["name"], "chapter": t.get("chapter", ""),
                        "domain": t.get("domain", ""), "grade": t.get("grade"),
-                       "status": status, "tier": tier,
+                       "status": status, "tier": tier, "prereq": pr_name,
                        "week_count": n7, "week_accuracy": round(a7, 2) if n7 else None})
     order = {"mastered": 0, "learning": 1, "locked": 2}
     skills.sort(key=lambda s: (order[s["status"]], s["id"]))

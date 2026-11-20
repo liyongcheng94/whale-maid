@@ -89,6 +89,7 @@
         <div class="title-chip">🏅 <span id="whoTitle">新手航海员</span> · XP <span id="whoXp">0</span> · 🔥 <span id="whoStreak">0</span> 天 · 徽章 <span id="whoBadges">0</span></div></div>
     </div>
     <div id="topRight"><button id="homeBtn" aria-label="回到头像墙" title="回到头像墙" onclick="location.href='index.html'">🏠</button><button id="muteBtn" aria-label="声音开关" title="声音开关">🔊</button></div>
+    <div id="xpBar" style="width:100%;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin-top:4px"><div id="xpFill" style="height:100%;width:0%;background:#ffd39e;border-radius:2px;transition:.3s"></div></div>
   </div>
 
   <div id="home">
@@ -239,6 +240,18 @@ async function submitRedo() {
     redoState.right++;
     $("redoFb").textContent = "✓ 这次对了!";
     spawnParticles("hearts", innerWidth / 2, innerHeight / 2);
+    // R141 学而思对标「举一反三」:答对后追加一道同知识点新题
+    if (redoState.appended === undefined) redoState.appended = 0;
+    if (redoState.appended < 2) {
+      try {
+        const cur = redoState.list[redoState.i];
+        const nq = await (await fetch(`/api/learn/next?child=${encodeURIComponent(CHILD)}&level=${cur.level}&session=redo-extra-${Date.now()}`)).json();
+        if (nq.qid && !redoState.list.some(x => x.qid === nq.qid)) {
+          redoState.list.push(nq);
+          redoState.appended++;
+        }
+      } catch (_) {}
+    }
   } else {
     $("redoFb").textContent = "还差一点,看看提示:" + (d.scaffold || "");
   }
@@ -441,7 +454,7 @@ async function loadTree() {
     tree.innerHTML = d.skills.map(s =>
       `<div style="display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px;border:${s.status === "mastered" ? "1px solid #7be3a2" : "none"}">
         <span>${dot[s.status]}</span>
-        <span style="flex:1;font-size:15px">${s.name} <span style="font-size:11px;color:#9fc6e8">${s.chapter}</span></span>
+        <span style="flex:1;font-size:15px">${s.name} <span style="font-size:11px;color:#9fc6e8">${s.chapter}${s.prereq ? " · 先修:" + s.prereq : ""}</span></span>
         <span style="font-size:12px;color:#9fc6e8">${label[s.status]}${s.week_count ? " · 7 天 " + s.week_count + " 题" : ""}</span>
       </div>`).join("");
   } catch (_) { tree.innerHTML = '<div style="opacity:.6;font-size:13px">技能树加载失败</div>'; }
