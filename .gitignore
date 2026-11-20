@@ -12,3 +12,5 @@ __pycache__/
 *3mf:Zone.Identifier
 tools/
 web/data/
+firmware/prebuilt/*.bin
+nvs_*.bin
