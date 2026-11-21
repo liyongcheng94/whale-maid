@@ -1,14 +1,18 @@
 0002-waveshare-146-xueyuan.patch · 学园实体机(微雪 ESP32-S3-Touch-LCD-1.46)固件自主化
 =====================================================================
-R138(2026-11-20)实机交付版,R142(2026-11-21)触摸改版:
-  1. config.json:sdkconfig_append 注入 CONFIG_OTA_URL 指向自建服务端(192.168.1.9:8003),
-     激活服务端 OTA 通道(固件迭代不再依赖 USB 线)。
-  2. esp32-s3-touch-lcd-1.46.cc:触摸互动——R142 改为 I2C 轮询 CST816S(0x15)触点数寄存器
-     0x02(与 espressif 官方 esp_lcd_touch_cst816s 驱动同口径),按下沿循环切换鲸鱼娘表情;
-     i2c_master_bus_add_device 建设备句柄(总线句柄不能直接 transmit_receive)。
-     R138 初版的「INT 上升沿」是错的——CST816S INT 为下降沿且依赖 IC 配置,已弃用。
-     注意 IDF 6.1 枚举名 gpio_pullup_t::GPIO_PULLUP_ENABLE(旧名 GPIO_PULLUP 已移除)。
-烧录:merged bin → 0x0,表情资产 → assets 分区 0x800000(tools/rebuild_assets.py),
+R138(2026-11-20)实机交付版;R142~R145(2026-11-21)触摸侦探终局:
+  1. config.json:sdkconfig_append 注入 CONFIG_OTA_URL 指向自建服务端(192.168.1.9:8003)。
+  2. 触摸互动(摸屏循环切表情)——**触摸 IC 真身是 SPD2010 屏模组集成的 Hynitron 触摸@0x53**,
+     wiki 所称 CST816S@0x15 有误(总线扫描证实 0x15 不存在)。逐行对照微雪官方
+     Touch_SPD2010.c 移植:寄存器地址大端(先高后低)、数据 [d0,d1]、状态 0x2000
+     (st[0]bit0=pt_exist;st[1] bit6=in_bios bit5=in_cpu bit3=cpu_run;read_len 小端)、
+     HDP 数据包 0x0300(包头 4B+每点 6B,12 位坐标)、完成检查 0x02FC(0x82 清中断)。
+     !!此 I2C 总线 100kHz 全 NACK,必须 400kHz(实测取证)。
+     R138 初版「INT 上升沿」、R142「CST816S@0x15 轮询」均为错误方向,已废弃。
+  3. InitializeTca9554:EXIO 全部 8 脚设输出并拉高(官方 demo 口径,释放使能)。
+烧录:merged bin → 0x0;增量迭代只烧 app@0x20000;表情资产 → assets 分区 0x800000。
+不修改任何引脚定义(OTA 变砖红线);与 0001(whale-maid 自制板)互不影响。
+
 diff --git a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json
 index af45cbc..19482fd 100644
 --- a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json
@@ -26,25 +30,49 @@ index af45cbc..19482fd 100644
  }
 \ No newline at end of file
 diff --git a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc
-index 1fde8f7..ab264eb 100644
+index 1fde8f7..0ac03b2 100644
 --- a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc
 +++ b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc
-@@ -218,6 +218,47 @@ private:
+@@ -90,15 +90,18 @@ private:
+         // ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_2 | IO_EXPANDER_PIN_NUM_3, 1);                             // 将引脚电平设置为 1
+         // ret = esp_io_expander_print_state(io_expander);                                                                             // 打印引脚状态
+ 
+-        ret = esp_io_expander_set_dir(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, IO_EXPANDER_OUTPUT);                 // 设置引脚 EXIO0 和 EXIO1 模式为输出
++        // R144:按微雪官方 demo,触摸 IC 的电源/复位使能接在 TCA9554 的 EXIO 脚上,
++        // 只配 EXIO0/1 时其余脚浮空=触摸禁能(实测 0x15 不存在、INT 无活动)。
++        // 全部 EXIO0~7 设为输出并拉高(使能+复位释放),复位脉冲节律与官方一致。
++        ret = esp_io_expander_set_dir(io_expander, 0xFF, IO_EXPANDER_OUTPUT);
+         ESP_ERROR_CHECK(ret);
+-        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, 1);                                // 复位 LCD 与 TouchPad
++        ret = esp_io_expander_set_level(io_expander, 0xFF, 1);
+         ESP_ERROR_CHECK(ret);
+         vTaskDelay(pdMS_TO_TICKS(300));
+-        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, 0);                                // 复位 LCD 与 TouchPad
++        ret = esp_io_expander_set_level(io_expander, 0xFF, 0);
+         ESP_ERROR_CHECK(ret);
+         vTaskDelay(pdMS_TO_TICKS(300));
+-        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, 1);                                // 复位 LCD 与 TouchPad
++        ret = esp_io_expander_set_level(io_expander, 0xFF, 1);
+         ESP_ERROR_CHECK(ret);
+     }
+ 
+@@ -218,6 +221,96 @@ private:
                  gpio_set_level(PWR_Control_PIN, true);
              }
          }, this);
 +
-+        // 触摸互动(R142):轮询 CST816S(0x15)触点数寄存器 0x02,按下沿循环切表情。
-+        // 不用 INT 中断——CST816S INT 为下降沿且依赖 IC 配置,轮询 I2C 与官方驱动同口径最稳;
-+        // GPIO4 电平仅随触摸打进日志,取证 INT 极性备用。
-+        struct TpCtx { CustomBoard* board; i2c_master_dev_handle_t tp_dev; };
++        // 触摸互动(R145b):SPD2010 屏模组集成触摸(Hynitron@0x53,HDP 协议)。
++        // 逐行对照微雪官方 Touch_SPD2010.c 移植——关键口径:
++        //   寄存器地址大端(先高后低);数据字节序 [d0,d1];状态位 st[1]:bit6=in_bios
++        //   bit5=in_cpu bit3=cpu_run;read_len=st[2]|st[3]<<8;HDP 包在 0x0300,包头4B+每点6B。
++        // wiki 所称 CST816S@0x15 有误(总线扫描证实 0x15 不存在,0x53 才是触摸)。
++        struct TpCtx { CustomBoard* board; i2c_master_dev_handle_t tp; };
 +        static TpCtx ctx{this, nullptr};
 +        i2c_device_config_t tp_cfg = {};
-+        tp_cfg.dev_addr_length = I2C_ADDR_BIT_LEN_7;
-+        tp_cfg.device_address = 0x15;   // CST816S
-+        tp_cfg.scl_speed_hz = 100000;
-+        if (i2c_master_bus_add_device(i2c_bus_, &tp_cfg, &ctx.tp_dev) != ESP_OK) {
-+            ESP_LOGE(TAG, "CST816S add i2c device failed");
++        tp_cfg.device_address = 0x53;  // 官方 Touch_SPD2010.h: SPD2010_ADDR
++        tp_cfg.scl_speed_hz = 400000;  // 此总线 100k 实测 NACK,须 400k(R143b 取证)
++        if (i2c_master_bus_add_device(i2c_bus_, &tp_cfg, &ctx.tp) != ESP_OK) {
++            ESP_LOGE(TAG, "tp(SPD2010@0x53) add i2c device failed");
 +        }
 +        gpio_config_t tp_io = {};
 +        tp_io.pin_bit_mask = 1ULL << TP_PIN_NUM_INT;
@@ -56,22 +84,70 @@ index 1fde8f7..ab264eb 100644
 +            auto self = ctxp->board;
 +            static const char* kEmo[] = {"happy", "laughing", "surprised", "loving", "cool", "sleepy"};
 +            static int idx = 0;
-+            bool was_down = false;
-+            const uint8_t reg = 0x02;
-+            uint8_t data[6] = {0};
-+            for (;;) {
-+                esp_err_t r = i2c_master_transmit_receive(ctxp->tp_dev, &reg, 1, data, sizeof(data), -1);
-+                bool down = (r == ESP_OK) && (data[0] > 0);
-+                if (down && !was_down) {
-+                    uint16_t x = ((data[1] & 0x0F) << 8) | data[2];
-+                    uint16_t y = ((data[3] & 0x0F) << 8) | data[4];
-+                    ESP_LOGI(TAG, "tp touch: n=%u (%u,%u) int_gpio=%d", data[0], x, y,
-+                             gpio_get_level(TP_PIN_NUM_INT));
-+                    self->GetDisplay()->SetEmotion(kEmo[idx % 6]);
-+                    idx++;
++
++            // 官方口径:reg 大端 [rh,rl],数据 [d0,d1]
++            auto wr_cmd = [&](uint8_t rh, uint8_t rl, uint8_t d0, uint8_t d1) {
++                uint8_t buf[4] = {rh, rl, d0, d1};
++                return i2c_master_transmit(ctxp->tp, buf, 4, 100);
++            };
++            auto rd_reg = [&](uint8_t rh, uint8_t rl, uint8_t* out, int n) {
++                uint8_t rb[2] = {rh, rl};
++                return i2c_master_transmit_receive(ctxp->tp, rb, 2, out, n, 200);
++            };
++
++            // 取证:读固件版本(0x2600,18B——官方 read_fw_version,应见 "SPD-2010")
++            {
++                uint8_t fw[18] = {0};
++                if (rd_reg(0x26, 0x00, fw, sizeof(fw)) == ESP_OK) {
++                    char name[9] = {0};
++                    memcpy(name, fw + 14, 4);   // "2010"(低)
++                    memcpy(name + 4, fw + 10, 4); // 拼接展示用
++                    ESP_LOGI(TAG, "tp fw: DVer=%02X%02X", fw[5], fw[4]);
 +                }
-+                was_down = down;
-+                vTaskDelay(pdMS_TO_TICKS(80));
++            }
++
++            bool was_down = false;
++            for (;;) {
++                uint8_t st[4] = {0};
++                if (rd_reg(0x20, 0x00, st, 4) == ESP_OK) {
++                    bool pt = st[0] & 0x01, gesture = st[0] & 0x02;
++                    bool in_bios = st[1] & 0x40, in_cpu = st[1] & 0x20, cpu_run = st[1] & 0x08, aux = st[1] & 0x08;
++                    uint16_t rlen = st[2] | (st[3] << 8);
++                    if (in_bios) {
++                        wr_cmd(0x02, 0x00, 0x01, 0x00);  // clear int
++                        wr_cmd(0x04, 0x00, 0x01, 0x00);  // cpu start
++                    } else if (in_cpu) {
++                        wr_cmd(0x50, 0x00, 0x00, 0x00);  // point mode
++                        wr_cmd(0x46, 0x00, 0x00, 0x00);  // touch start
++                        wr_cmd(0x02, 0x00, 0x01, 0x00);  // clear int
++                    } else if (cpu_run && rlen == 0) {
++                        wr_cmd(0x02, 0x00, 0x01, 0x00);  // clear int(空闲常态)
++                    } else if (pt || gesture) {
++                        uint8_t hdp[40] = {0};
++                        int n = rlen < 40 ? rlen : 40;
++                        if (rlen >= 10 && rd_reg(0x00, 0x03, hdp, n) == ESP_OK) {
++                            uint8_t check_id = hdp[4];
++                            if (check_id <= 0x0A && pt) {
++                                uint8_t tnum = (rlen - 4) / 6;
++                                uint16_t x = ((hdp[7] & 0xF0) << 4) | hdp[5];
++                                uint16_t y = ((hdp[7] & 0x0F) << 8) | hdp[6];
++                                if (!was_down && tnum > 0) {
++                                    ESP_LOGI(TAG, "tp touch: n=%u (%u,%u) int=%d", tnum, x, y,
++                                             gpio_get_level(TP_PIN_NUM_INT));
++                                    self->GetDisplay()->SetEmotion(kEmo[idx % 6]);
++                                    idx++;
++                                }
++                                was_down = tnum > 0;
++                            }
++                        }
++                        // HDP 完成检查(官方:0x02FC 状态 0x82 则清中断)
++                        uint8_t hs[8] = {0};
++                        if (rd_reg(0xFC, 0x02, hs, 8) == ESP_OK && hs[5] == 0x82) {
++                            wr_cmd(0x02, 0x00, 0x01, 0x00);
++                        }
++                    }
++                }
++                vTaskDelay(pdMS_TO_TICKS(100));
 +            }
 +        }, "tp_emo", 4096, &ctx, 5, nullptr);
      }
