@@ -106,10 +106,10 @@ def next_seq(group, ext=".m4a"):
 
 def import_to_repo(group, song, dl_dir=None):
     """把 music-dl 下载产物复制入库（ASCII 命名），返回 (filename, relpath)。"""
-    dl_dir = dl_dir or os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    os.environ.get("MUSIC_DL_DATA", "../../../../../AppData/Local/Temp/wm_musicdl/data/downloads").lstrip("./"))
-    # Windows 下 music-dl cwd 的 data/downloads；也可用环境变量 MUSIC_DL_DATA 指定
-    dl_dir = os.environ.get("MUSIC_DL_DATA", dl_dir)
+    # R143:默认目录=tools/music-dl/data/downloads(music-dl 工作数据目录,start_musicdl.bat 的 cwd);
+    # 旧默认值用 lstrip("./") 剥相对前缀拼出 scripts\AppData\... 坏路径,已废弃。
+    dl_dir = dl_dir or os.environ.get(
+        "MUSIC_DL_DATA", os.path.join(REPO, "tools", "music-dl", "data", "downloads"))
     seq = next_seq(group)
     fname = "%s_%02d_%s.m4a" % (group, seq, slugify(song["name"]))
     src = None
@@ -197,10 +197,15 @@ def main():
         cache = json.load(open(LAST_SEARCH, encoding="utf-8"))
         song = cache[args.get - 1]
     elif args.find:
-        res = search(args.find, args.sources)
-        if not res:
+        song = None
+        for attempt in range(3):  # R143:搜索偶发空结果,重试 3 次(在线点歌链路容错)
+            res = search(args.find, args.sources)
+            if res:
+                song = res[0]
+                break
+            print("搜索无结果,重试 %d/3..." % (attempt + 1))
+        if not song:
             sys.exit("没有可用结果")
-        song = res[0]
     else:
         ap.print_help()
         return

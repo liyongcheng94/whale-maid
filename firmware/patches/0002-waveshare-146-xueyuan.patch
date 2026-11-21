@@ -1,14 +1,14 @@
 0002-waveshare-146-xueyuan.patch · 学园实体机(微雪 ESP32-S3-Touch-LCD-1.46)固件自主化
 =====================================================================
-R138(2026-11-20)实机交付版,两处改动:
+R138(2026-11-20)实机交付版,R142(2026-11-21)触摸改版:
   1. config.json:sdkconfig_append 注入 CONFIG_OTA_URL 指向自建服务端(192.168.1.9:8003),
      激活服务端 OTA 通道(固件迭代不再依赖 USB 线)。
-  2. esp32-s3-touch-lcd-1.46.cc:触摸互动——TP INT(GPIO4)上升沿轮询任务,摸屏循环切换
-     鲸鱼娘表情(happy/laughing/surprised/loving/cool/sleepy)。
+  2. esp32-s3-touch-lcd-1.46.cc:触摸互动——R142 改为 I2C 轮询 CST816S(0x15)触点数寄存器
+     0x02(与 espressif 官方 esp_lcd_touch_cst816s 驱动同口径),按下沿循环切换鲸鱼娘表情;
+     i2c_master_bus_add_device 建设备句柄(总线句柄不能直接 transmit_receive)。
+     R138 初版的「INT 上升沿」是错的——CST816S INT 为下降沿且依赖 IC 配置,已弃用。
      注意 IDF 6.1 枚举名 gpio_pullup_t::GPIO_PULLUP_ENABLE(旧名 GPIO_PULLUP 已移除)。
-烧录:merged bin → 0x0,表情资产 → assets 分区 0x800000(tools/rebuild_assets.py)。
-不修改任何引脚定义(OTA 变砖红线);与 0001(whale-maid 自制板)互不影响。
-
+烧录:merged bin → 0x0,表情资产 → assets 分区 0x800000(tools/rebuild_assets.py),
 diff --git a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json
 index af45cbc..19482fd 100644
 --- a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/config.json
@@ -26,35 +26,52 @@ index af45cbc..19482fd 100644
  }
 \ No newline at end of file
 diff --git a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc
-index 1fde8f7..cff6bd8 100644
+index 1fde8f7..ab264eb 100644
 --- a/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc
 +++ b/main/boards/waveshare/esp32-s3-touch-lcd-1.46/esp32-s3-touch-lcd-1.46.cc
-@@ -218,6 +218,30 @@ private:
+@@ -218,6 +218,47 @@ private:
                  gpio_set_level(PWR_Control_PIN, true);
              }
          }, this);
 +
-+        // 触摸互动:TP INT(GPIO4) 上升沿 → 循环切换表情(摸一下就有反应)
-+        struct TpCtx { CustomBoard* board; };
-+        static TpCtx ctx{this};
++        // 触摸互动(R142):轮询 CST816S(0x15)触点数寄存器 0x02,按下沿循环切表情。
++        // 不用 INT 中断——CST816S INT 为下降沿且依赖 IC 配置,轮询 I2C 与官方驱动同口径最稳;
++        // GPIO4 电平仅随触摸打进日志,取证 INT 极性备用。
++        struct TpCtx { CustomBoard* board; i2c_master_dev_handle_t tp_dev; };
++        static TpCtx ctx{this, nullptr};
++        i2c_device_config_t tp_cfg = {};
++        tp_cfg.dev_addr_length = I2C_ADDR_BIT_LEN_7;
++        tp_cfg.device_address = 0x15;   // CST816S
++        tp_cfg.scl_speed_hz = 100000;
++        if (i2c_master_bus_add_device(i2c_bus_, &tp_cfg, &ctx.tp_dev) != ESP_OK) {
++            ESP_LOGE(TAG, "CST816S add i2c device failed");
++        }
 +        gpio_config_t tp_io = {};
 +        tp_io.pin_bit_mask = 1ULL << TP_PIN_NUM_INT;
 +        tp_io.mode = GPIO_MODE_INPUT;
 +        tp_io.pull_up_en = GPIO_PULLUP_ENABLE;
 +        gpio_config(&tp_io);
 +        xTaskCreate([](void* arg) {
-+            auto self = static_cast<TpCtx*>(arg)->board;
++            auto ctxp = static_cast<TpCtx*>(arg);
++            auto self = ctxp->board;
 +            static const char* kEmo[] = {"happy", "laughing", "surprised", "loving", "cool", "sleepy"};
 +            static int idx = 0;
-+            int last = gpio_get_level(TP_PIN_NUM_INT);
++            bool was_down = false;
++            const uint8_t reg = 0x02;
++            uint8_t data[6] = {0};
 +            for (;;) {
-+                int lvl = gpio_get_level(TP_PIN_NUM_INT);
-+                if (lvl == 1 && last == 0) {
++                esp_err_t r = i2c_master_transmit_receive(ctxp->tp_dev, &reg, 1, data, sizeof(data), -1);
++                bool down = (r == ESP_OK) && (data[0] > 0);
++                if (down && !was_down) {
++                    uint16_t x = ((data[1] & 0x0F) << 8) | data[2];
++                    uint16_t y = ((data[3] & 0x0F) << 8) | data[4];
++                    ESP_LOGI(TAG, "tp touch: n=%u (%u,%u) int_gpio=%d", data[0], x, y,
++                             gpio_get_level(TP_PIN_NUM_INT));
 +                    self->GetDisplay()->SetEmotion(kEmo[idx % 6]);
 +                    idx++;
 +                }
-+                last = lvl;
-+                vTaskDelay(pdMS_TO_TICKS(60));
++                was_down = down;
++                vTaskDelay(pdMS_TO_TICKS(80));
 +            }
 +        }, "tp_emo", 4096, &ctx, 5, nullptr);
      }

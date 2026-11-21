@@ -1,0 +1,132 @@
+diff --git a/main/xiaozhi-server/core/utils/util.py b/main/xiaozhi-server/core/utils/util.py
+index c5fa3fa..6b94490 100644
+--- a/main/xiaozhi-server/core/utils/util.py
++++ b/main/xiaozhi-server/core/utils/util.py
+@@ -66,12 +66,22 @@ ffmpeg_path_override = _ffmpeg_path_override
+ 
+ 
+ def get_local_ip():
++    # R136: 虚拟网卡(WSL2/Hyper-V 100.64.0.0/10)会被默认路由误选,优先返回真实局域网段 IP
+     try:
+         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+-        # Connect to Google's DNS servers
+         s.connect(("8.8.8.8", 80))
+         local_ip = s.getsockname()[0]
+         s.close()
++        if local_ip.startswith("100."):
++            # 虚拟段:遍历主机名解析找 192.168/10. 开头的真实局域网 IP
++            import socket as _s
++            try:
++                for info in _s.getaddrinfo(_s.gethostname(), None, _s.AF_INET):
++                    ip = info[4][0]
++                    if ip.startswith("192.168.") or ip.startswith("10.") or ip.startswith("172."):
++                        return ip
++            except Exception:
++                pass
+         return local_ip
+     except Exception as e:
+         return "127.0.0.1"
+diff --git a/main/xiaozhi-server/plugins_func/functions/play_music.py b/main/xiaozhi-server/plugins_func/functions/play_music.py
+index fd21f9f..43a110c 100644
+--- a/main/xiaozhi-server/plugins_func/functions/play_music.py
++++ b/main/xiaozhi-server/plugins_func/functions/play_music.py
+@@ -1,9 +1,13 @@
++import asyncio
+ import os
+ import re
++import subprocess
++import sys
+ import time
+ import random
+ import difflib
+ import traceback
++import urllib.request
+ from pathlib import Path
+ from core.providers.tts.dto.dto import TTSMessageDTO, SentenceType, ContentType
+ from plugins_func.register import register_function, ToolType, ActionResponse, Action
+@@ -16,6 +20,72 @@ TAG = __name__
+ 
+ MUSIC_CACHE = {}
+ 
++# R143 在线点歌联动:曲库没有的歌 → go-music-dl(web 8099)搜索下载入库
++WHALE_REPO = r"D:\project\whale-maid"
++MUSIC_FETCH_TIMEOUT = 75  # 在线找歌超时(秒)
++
++
++def _musicdl_alive(timeout=2):
++    try:
++        with urllib.request.urlopen("http://127.0.0.1:8099/", timeout=timeout):
++            return True
++    except Exception:
++        # 401/404 等响应也说明服务活着;只有连接失败才是没起
++        return False
++
++
++def _speak(conn, text):
++    """后台线程回报一句话(队列线程安全)。"""
++    conn.tts.store_tts_text(conn.sentence_id, text)
++    conn.tts.tts_text_queue.put(
++        TTSMessageDTO(
++            sentence_id=conn.sentence_id,
++            sentence_type=SentenceType.MIDDLE,
++            content_type=ContentType.TEXT,
++            content_detail=text,
++        )
++    )
++
++
++def _refresh_music_cache():
++    time.sleep(1)  # 等下载落盘
++    MUSIC_CACHE["music_files"], MUSIC_CACHE["music_file_names"] = get_music_files(
++        MUSIC_CACHE["music_dir"], MUSIC_CACHE["music_ext"]
++    )
++    MUSIC_CACHE["scan_time"] = time.time()
++
++
++def _try_online_fetch(conn, song_name):
++    """曲库没有时:提示去找 → music_fetch 下载 → 重建中文名硬链接 → 重扫 → 播新歌;失败随机兜底。"""
++    try:
++        _speak(conn, f"曲库里还没有《{song_name}》,我去网上找找,稍等一下下哦")
++        r = subprocess.run(
++            [sys.executable, "-I", os.path.join(WHALE_REPO, "scripts", "music_fetch.py"),
++             "--find", song_name, "--group", "songs"],
++            capture_output=True, text=True, timeout=MUSIC_FETCH_TIMEOUT, cwd=WHALE_REPO)
++        # 重生成中文名硬链接目录(幂等,自动包含新歌)
++        subprocess.run(
++            [sys.executable, "-I", os.path.join(WHALE_REPO, "scripts", "link_music_for_server.py")],
++            capture_output=True, timeout=60, cwd=WHALE_REPO)
++        _refresh_music_cache()
++        best_match = _find_best_match(song_name, MUSIC_CACHE["music_files"]) if r.returncode == 0 else None
++        if best_match and os.path.exists(os.path.join(MUSIC_CACHE["music_dir"], best_match)):
++            conn.logger.bind(tag=TAG).info(f"在线找到并下载: {best_match}")
++            asyncio.run_coroutine_threadsafe(
++                play_local_music(conn, specific_file=best_match), conn.loop).result(timeout=30)
++        else:
++            conn.logger.bind(tag=TAG).info(f"在线找歌失败({song_name}),随机兜底")
++            _speak(conn, "没找到这首歌,先给你放一首别的歌吧")
++            asyncio.run_coroutine_threadsafe(
++                play_local_music(conn), conn.loop).result(timeout=30)
++    except Exception as e:
++        conn.logger.bind(tag=TAG).error(f"在线找歌出错: {e}\n{traceback.format_exc()}")
++        try:
++            asyncio.run_coroutine_threadsafe(
++                play_local_music(conn), conn.loop).result(timeout=30)
++        except Exception:
++            pass
++
+ play_music_function_desc = {
+     "type": "function",
+     "function": {
+@@ -146,6 +216,12 @@ async def handle_music_command(conn: "ConnectionHandler", text):
+                 conn.logger.bind(tag=TAG).info(f"找到最匹配的歌曲: {best_match}")
+                 await play_local_music(conn, specific_file=best_match)
+                 return True
++            # R143:有明确歌名但曲库没有——music-dl 在线找歌(线程池,避免阻塞 event loop);
++            # 服务不在时退回随机兜底(带提示,不再静默随机)
++            if _musicdl_alive():
++                conn.executor.submit(_try_online_fetch, conn, potential_song)
++                return True
++            conn.logger.bind(tag=TAG).info(f"曲库无此歌且 music-dl 未运行: {potential_song},随机兜底")
+     # 检查是否是通用播放音乐命令
+     await play_local_music(conn)
+     return True
