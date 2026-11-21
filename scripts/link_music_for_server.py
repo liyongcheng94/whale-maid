@@ -54,6 +54,10 @@ def main():
                 print(f"✗ 缺源文件: {src}")
                 continue
             name = clean_name(song)
+            # 歌手前缀:服务端 difflib 按文件名匹配,「周杰伦」必须能命中歌手维度的歌
+            artist = song.get("artist", "").strip()
+            if artist and not name.startswith(artist):
+                name = f"{artist}-{name}"
             n = seen.get(name, 0)
             seen[name] = n + 1
             if n:
